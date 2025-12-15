@@ -61,18 +61,8 @@
       filter: blur(0.1px);
     }
 
-    /* Keep global scanlines very subtle (optional). If you want ONLY dossier scanlines, delete this. */
-    .scanlines{
-      position:fixed; inset:0; pointer-events:none; opacity:0.12;
-      background: repeating-linear-gradient(
-        to bottom,
-        rgba(255,255,255,0.05),
-        rgba(255,255,255,0.05) 1px,
-        rgba(0,0,0,0) 4px,
-        rgba(0,0,0,0) 7px
-      );
-      mix-blend-mode: overlay;
-    }
+    /* NOTE: Global scanlines removed.
+       If you want scanlines, they're now dossier-only (inside #dossierCard). */
 
     .stage{ position:fixed; inset:0; display:grid; place-items:center; }
     .wrap{ width:1920px; height:1080px; position:relative; transform-origin: top left; }
@@ -271,7 +261,7 @@
     /* ---- LOCAL FLICKER ZONE (ONLY DOSSIER CARD) ---- */
     .flicker-zone{
       position: relative;
-      isolation: isolate; /* ensure overlays blend only inside */
+      isolation: isolate;
       overflow: hidden;
       border-radius: var(--radius);
     }
@@ -279,7 +269,7 @@
       position:absolute;
       inset: 0;
       pointer-events:none;
-      z-index: 1; /* below header/content text which are z=2+ */
+      z-index: 1;
       opacity: 0.0;
       mix-blend-mode: overlay;
       background: radial-gradient(700px 420px at 50% 35%, rgba(209,161,75,0.10), transparent 60%);
@@ -295,7 +285,6 @@
       64% { opacity: 0.07; }
       78% { opacity: 0.20; }
     }
-    /* Optional: scanlines ONLY inside dossier card */
     .local-scan{
       position:absolute;
       inset:0;
@@ -630,7 +619,6 @@
 
 <body>
   <div class="noise"></div>
-  <div class="scanlines"></div>
 
   <div class="stage">
     <div class="wrap" id="wrap">
@@ -697,7 +685,7 @@
 
           <!-- RIGHT -->
           <div class="right">
-            <!-- DOSSIER CARD (ONLY THING THAT FLICKERS) -->
+            <!-- DOSSIER CARD (ONLY THING THAT FLICKERS / HAS SCANLINES) -->
             <div class="card flicker-zone" id="dossierCard">
               <div class="local-flicker"></div>
               <div class="local-scan"></div>
@@ -976,7 +964,7 @@
     const $ = (id) => document.getElementById(id);
     const qs = (name) => new URLSearchParams(location.search).get(name);
 
-    function clamp(n,a,b){ return Math.max(a, Math.min(b,n)); }
+    function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
     function safeJsonParse(raw){ try{ return JSON.parse(raw);}catch(e){ return null; } }
 
     function parseMMSS(s){
@@ -1025,6 +1013,9 @@
       d.cAtt = String(d.cAtt || DEFAULTS.cAtt).trim();
       d.cRai = String(d.cRai || DEFAULTS.cRai).trim();
 
+      d.accentMode = String(d.accentMode || DEFAULTS.accentMode).trim();
+      d.accentCustom = String(d.accentCustom || DEFAULTS.accentCustom).trim();
+
       return d;
     }
 
@@ -1065,7 +1056,7 @@
     function saveStored(data){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
     function clearStored(){ localStorage.removeItem(STORAGE_KEY); }
 
-    let state = {
+    const state = {
       data: normalizeData(DEFAULTS),
       index: 0,
       cycleTimer: null,
@@ -1078,6 +1069,12 @@
       stampIndex: 0
     };
 
+    function getWipeMs(){
+      const v = getComputedStyle(document.documentElement).getPropertyValue("--wipe-ms").trim();
+      const n = parseInt(v, 10);
+      return Number.isFinite(n) ? n : 520;
+    }
+
     function pickStamp(name, i, n){
       const templates = state.data.stampTemplates || DEFAULTS.stampTemplates;
       const t = templates[state.stampIndex % templates.length] || templates[0] || "FILE: {NAME}";
@@ -1087,15 +1084,6 @@
         .replaceAll("{NAME}", name.toUpperCase())
         .replaceAll("{I}", String(i+1))
         .replaceAll("{N}", String(n));
-    }
-
-    async function dossierFlipTransition(updateFn){
-      const frame = $("frame");
-      frame.classList.add("cycling");
-      await new Promise(r => setTimeout(r, 180));
-      updateFn();
-      frame.classList.remove("cycling");
-      // (No global settle class needed; we kept it minimal here.)
     }
 
     function renderInstallationInstant(){
@@ -1116,13 +1104,28 @@
       setText("teamAttName", d.teamAttName);
       setText("teamRaiName", d.teamRaiName);
 
-      $("barDef").style.width = inst.def + "%";
-      $("barAtt").style.width = inst.att + "%";
-      $("barRai").style.width = inst.rai + "%";
+      const barDef = $("barDef");
+      const barAtt = $("barAtt");
+      const barRai = $("barRai");
+
+      if (barDef) barDef.style.width = inst.def + "%";
+      if (barAtt) barAtt.style.width = inst.att + "%";
+      if (barRai) barRai.style.width = inst.rai + "%";
 
       setText("pctDef", inst.def + "%");
       setText("pctAtt", inst.att + "%");
       setText("pctRai", inst.rai + "%");
+    }
+
+    function dossierFlipTransition(updateFn){
+      const frame = $("frame");
+      if (!frame){ updateFn(); return; }
+
+      const wipeMs = getWipeMs();
+      frame.classList.add("cycling");
+
+      window.setTimeout(() => updateFn(), 180);
+      window.setTimeout(() => frame.classList.remove("cycling"), wipeMs + 160);
     }
 
     function renderInstallationFancy(){
@@ -1185,7 +1188,6 @@
       renderCountdown();
     }
 
-    // Render all
     function renderAll(data){
       data = normalizeData(data);
       state.data = data;
@@ -1229,6 +1231,7 @@
 
     // Editor
     function openEditor(open){ $("editor").classList.toggle("hidden", !open); }
+
     function installationsToText(list){
       return (list || []).map(x => `${x.name} | ${x.def} | ${x.att} | ${x.rai}`).join("\n");
     }
@@ -1246,6 +1249,7 @@
       }
       return out.length ? out : DEFAULTS.installations.slice();
     }
+
     function fillEditor(d){
       d = normalizeData(d);
 
