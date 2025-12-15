@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>40k Post-Game + Campaign Cycle</title>
+  <title>40k Post-Game + Campaign Dossier Cycle</title>
 
   <style>
     :root{
@@ -26,19 +26,24 @@
       --radius: 18px;
       --shadow: 0 20px 60px rgba(0,0,0,0.55);
       --safe: 72px;
+
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       --sans: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 
       --result-accent: var(--gold);
 
-      /* Team colors (editable via editor with custom hex too) */
-      --c-def: #d1a14b; /* Defenders */
-      --c-att: #cc3b3b; /* Attackers */
-      --c-rai: #4aa6ff; /* Raiders */
+      --c-def:#d1a14b;
+      --c-att:#cc3b3b;
+      --c-rai:#4aa6ff;
+
+      /* Dossier motion tuning */
+      --wipe-ms: 520ms;
+      --settle-ms: 260ms;
+      --type-ms: 380ms;
     }
 
-    * { box-sizing: border-box; }
-    html, body { height: 100%; }
+    *{ box-sizing:border-box; }
+    html, body{ height:100%; }
     body{
       margin:0;
       font-family: var(--sans);
@@ -48,7 +53,7 @@
     }
 
     .noise{
-      position: fixed; inset: 0; pointer-events: none; opacity: 0.10;
+      position:fixed; inset:0; pointer-events:none; opacity:0.10;
       background-image:
         radial-gradient(circle at 20% 30%, rgba(255,255,255,.08) 0 1px, transparent 2px),
         radial-gradient(circle at 60% 70%, rgba(255,255,255,.06) 0 1px, transparent 2px),
@@ -59,7 +64,7 @@
     }
 
     .scanlines{
-      position: fixed; inset: 0; pointer-events: none; opacity: 0.25;
+      position:fixed; inset:0; pointer-events:none; opacity:0.25;
       background: repeating-linear-gradient(
         to bottom,
         rgba(255,255,255,0.05),
@@ -71,43 +76,41 @@
     }
 
     .flicker{
-      position: fixed; inset: 0; pointer-events: none;
+      position:fixed; inset:0; pointer-events:none;
       animation: flicker 7s infinite;
       background: radial-gradient(700px 420px at 50% 30%, rgba(209,161,75,0.06), transparent 55%);
-      opacity: 0.45;
+      opacity:0.45;
     }
     @keyframes flicker{
-      0%, 100% { opacity: 0.26; }
-      7% { opacity: 0.38; }
-      12% { opacity: 0.22; }
-      23% { opacity: 0.44; }
-      27% { opacity: 0.30; }
-      51% { opacity: 0.36; }
-      64% { opacity: 0.24; }
-      78% { opacity: 0.40; }
+      0%,100%{ opacity:0.26; }
+      7%{ opacity:0.38; }
+      12%{ opacity:0.22; }
+      23%{ opacity:0.44; }
+      27%{ opacity:0.30; }
+      51%{ opacity:0.36; }
+      64%{ opacity:0.24; }
+      78%{ opacity:0.40; }
     }
 
-    .stage{ position: fixed; inset: 0; display:grid; place-items:center; }
-    .wrap{
-      width: 1920px; height: 1080px; position: relative; transform-origin: top left;
-    }
+    .stage{ position:fixed; inset:0; display:grid; place-items:center; }
+    .wrap{ width:1920px; height:1080px; position:relative; transform-origin: top left; }
 
     .frame{
-      position: absolute;
+      position:absolute;
       inset: var(--safe);
       border-radius: calc(var(--radius) + 8px);
       background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.10));
       box-shadow: var(--shadow);
       border: 1px solid var(--stroke2);
-      overflow: hidden;
+      overflow:hidden;
     }
     .frame::before{
       content:"";
       position:absolute;
-      inset: -2px;
+      inset:-2px;
       border-radius: calc(var(--radius) + 10px);
       border: 2px solid var(--stroke);
-      opacity: 0.7;
+      opacity:0.7;
       pointer-events:none;
     }
 
@@ -117,6 +120,7 @@
       background: linear-gradient(90deg, rgba(209,161,75,0.16), rgba(209,161,75,0.06) 55%, rgba(233,230,220,0.02));
       border-bottom: 1px solid var(--stroke2);
       display:flex; align-items: baseline; justify-content: space-between; gap: 18px;
+      z-index: 5;
     }
     .title{
       letter-spacing: 0.14em;
@@ -136,11 +140,12 @@
 
     .content{
       position:absolute;
-      top: 86px; left:0; right:0; bottom:0;
+      top:86px; left:0; right:0; bottom:0;
       padding: 28px;
       display:grid;
       grid-template-columns: 1.25fr 0.75fr;
       gap: 22px;
+      z-index: 2;
     }
 
     .card{
@@ -148,6 +153,7 @@
       border: 1px solid var(--stroke2);
       border-radius: var(--radius);
       overflow:hidden;
+      position: relative;
     }
     .card .card-h{
       padding: 16px 18px;
@@ -175,15 +181,9 @@
       white-space: nowrap;
     }
 
-    /* LEFT: post-game declaration */
-    .result{
-      padding: 24px 22px 18px;
-      display:grid;
-      gap: 16px;
-    }
-    .result-top{
-      display:grid; gap:8px; text-align:center; padding-top: 8px;
-    }
+    /* LEFT: post-game */
+    .result{ padding: 24px 22px 18px; display:grid; gap:16px; }
+    .result-top{ display:grid; gap:8px; text-align:center; padding-top:8px; }
     .result-kicker{
       font-family: var(--mono);
       text-transform: uppercase;
@@ -207,12 +207,11 @@
       font-size: 20px;
       color: rgba(233,230,220,0.92);
     }
-
     .versus{
       display:grid;
       grid-template-columns: 1fr auto 1fr;
       align-items:center;
-      gap: 14px;
+      gap:14px;
       padding-top: 6px;
     }
     .side{
@@ -247,7 +246,6 @@
       border: 1px solid rgba(233,230,220,0.12);
       background: rgba(0,0,0,0.22);
     }
-
     .grid{
       padding: 18px;
       display:grid;
@@ -260,8 +258,8 @@
       border-radius: 14px;
       padding: 12px 12px 10px;
       display:grid;
-      gap: 6px;
-      min-height: 70px;
+      gap:6px;
+      min-height:70px;
     }
     .k{
       font-family: var(--mono);
@@ -279,18 +277,15 @@
     }
     .v.mono{ font-family: var(--mono); font-weight: 650; font-size: 14px; }
 
-    /* RIGHT: cycling installation + countdown */
+    /* RIGHT */
     .right{
       display:grid;
       grid-template-rows: auto auto 1fr;
       gap: 22px;
     }
 
-    .install{
-      padding: 16px 18px 18px;
-      display:grid;
-      gap: 14px;
-    }
+    /* Dossier card */
+    .install{ padding: 16px 18px 18px; display:grid; gap:14px; }
 
     .install-head{
       display:flex;
@@ -298,9 +293,10 @@
       justify-content: space-between;
       gap: 14px;
     }
+
     .install-name{
       font-weight: 900;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.10em;
       text-transform: uppercase;
       font-size: 22px;
       color: rgba(233,230,220,0.95);
@@ -315,10 +311,30 @@
       white-space: nowrap;
     }
 
-    .bars{
-      display:grid;
+    /* Dossier “stamp” line */
+    .dossier-stamp{
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(233,230,220,0.55);
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(0,0,0,0.18);
+      border: 1px solid rgba(233,230,220,0.10);
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
       gap: 10px;
     }
+    .stamp-left{ overflow:hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .stamp-right{
+      color: rgba(233,230,220,0.42);
+      white-space: nowrap;
+    }
+
+    .bars{ display:grid; gap:10px; }
+
     .bar-row{
       display:grid;
       grid-template-columns: 170px 1fr 54px;
@@ -351,9 +367,8 @@
       position:absolute; left:0; top:0; bottom:0;
       width: 0%;
       border-radius: 999px;
-      filter: saturate(1.05);
       opacity: 0.95;
-      transition: width 500ms ease;
+      transition: width 520ms ease;
     }
     .pct{
       font-family: var(--mono);
@@ -363,7 +378,6 @@
       color: rgba(233,230,220,0.82);
       text-align: right;
     }
-
     .fill.def{ background: var(--c-def); box-shadow: 0 0 18px rgba(209,161,75,0.14); }
     .fill.att{ background: var(--c-att); box-shadow: 0 0 18px rgba(204,59,59,0.14); }
     .fill.rai{ background: var(--c-rai); box-shadow: 0 0 18px rgba(74,166,255,0.14); }
@@ -381,20 +395,14 @@
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: rgba(233,230,220,0.50);
+      overflow:hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     /* Countdown card */
-    .countdown{
-      padding: 18px;
-      display:grid;
-      gap: 12px;
-    }
-    .timer-row{
-      display:flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 12px;
-    }
+    .countdown{ padding: 18px; display:grid; gap: 12px; }
+    .timer-row{ display:flex; align-items: baseline; justify-content: space-between; gap:12px; }
     .timer-label{
       font-family: var(--mono);
       font-size: 12px;
@@ -420,12 +428,8 @@
     }
     .timer-hidden{ display:none !important; }
 
-    /* Outcome list (still here, but now “Post-Game Notes”) */
-    .list{
-      padding: 18px 18px 16px;
-      display:grid;
-      gap: 12px;
-    }
+    /* Notes list */
+    .list{ padding: 18px 18px 16px; display:grid; gap:12px; }
     .line{
       display:flex;
       gap: 10px;
@@ -436,8 +440,8 @@
       border: 1px solid rgba(233,230,220,0.10);
     }
     .dot{
-      width: 10px; height: 10px;
-      border-radius: 999px;
+      width: 10px; height:10px;
+      border-radius:999px;
       margin-top: 5px;
       background: var(--result-accent);
       box-shadow: 0 0 10px rgba(209,161,75,0.2);
@@ -459,11 +463,130 @@
       letter-spacing: 0.18em;
       text-transform: uppercase;
       color: rgba(233,230,220,0.38);
+      z-index: 3;
     }
 
     .hidden{ display:none !important; }
 
-    /* EDITOR */
+    /* -------------------------
+       40k Dossier transition layer
+       ------------------------- */
+    .dossier-overlay{
+      position:absolute;
+      inset: 0;
+      pointer-events:none;
+      z-index: 4; /* above content */
+      opacity: 0;
+    }
+
+    /* Wipe plate */
+    .wipe{
+      position:absolute;
+      inset: 0;
+      transform: translateX(-110%);
+      background:
+        linear-gradient(90deg,
+          rgba(0,0,0,0.00),
+          rgba(0,0,0,0.65) 30%,
+          rgba(0,0,0,0.92) 55%,
+          rgba(0,0,0,0.72) 72%,
+          rgba(0,0,0,0.00)
+        );
+      filter: blur(0.4px);
+      opacity: 0.95;
+      border-left: 1px solid rgba(233,230,220,0.05);
+      border-right: 1px solid rgba(233,230,220,0.05);
+    }
+
+    /* Scan sweep */
+    .sweep{
+      position:absolute;
+      left:-30%;
+      top: 0;
+      width: 30%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(209,161,75,0.10), transparent);
+      opacity: 0.0;
+    }
+
+    /* When cycling */
+    .cycling .dossier-overlay{ opacity: 1; }
+    .cycling .wipe{
+      animation: wipe var(--wipe-ms) ease forwards;
+    }
+    .cycling .sweep{
+      animation: sweep calc(var(--wipe-ms) + 120ms) ease forwards;
+    }
+    .cycling .install-name,
+    .cycling .dossier-stamp,
+    .cycling .bars,
+    .cycling .install-footer{
+      animation: dimout var(--wipe-ms) ease forwards;
+    }
+    .settle .install-name,
+    .settle .dossier-stamp,
+    .settle .bars,
+    .settle .install-footer{
+      animation: settle var(--settle-ms) ease forwards;
+    }
+
+    /* Micro jitter on the whole dossier card during flip */
+    .cycling #dossierCard{
+      animation: jitter 140ms ease 2;
+    }
+
+    @keyframes wipe{
+      0%{ transform: translateX(-110%); }
+      100%{ transform: translateX(110%); }
+    }
+    @keyframes sweep{
+      0%{ transform: translateX(0); opacity: 0.0; }
+      30%{ opacity: 0.85; }
+      100%{ transform: translateX(480%); opacity: 0.0; }
+    }
+    @keyframes dimout{
+      0%{ opacity: 1; filter: blur(0px); }
+      40%{ opacity: 0.35; filter: blur(0.4px); }
+      100%{ opacity: 0.75; filter: blur(0px); }
+    }
+    @keyframes settle{
+      0%{ transform: translateY(-1px); opacity: 0.35; }
+      100%{ transform: translateY(0px); opacity: 1; }
+    }
+    @keyframes jitter{
+      0%{ transform: translateX(0); }
+      25%{ transform: translateX(-1px); }
+      50%{ transform: translateX(1px); }
+      75%{ transform: translateX(-1px); }
+      100%{ transform: translateX(0); }
+    }
+
+    /* Typewriter reveal (subtle) */
+    .type{
+      position: relative;
+    }
+    .type::after{
+      content:"";
+      position:absolute;
+      right:-6px;
+      top: 0.1em;
+      width: 2px;
+      height: 1em;
+      background: rgba(233,230,220,0.55);
+      opacity: 0;
+    }
+    .typing .type::after{
+      opacity: 1;
+      animation: caret 620ms steps(1) infinite;
+    }
+    @keyframes caret{
+      0%, 49%{ opacity: 1; }
+      50%, 100%{ opacity: 0; }
+    }
+
+    /* -------------------------
+       EDITOR
+       ------------------------- */
     .editor{
       position: absolute;
       right: 22px;
@@ -557,14 +680,20 @@
 
   <div class="stage">
     <div class="wrap" id="wrap">
-      <div class="frame">
+      <div class="frame" id="frame">
         <div class="header">
           <div class="title" id="hdrTitle">CAMPAIGN RECORD: BASTIOR SUB-SECTOR</div>
           <div class="sub" id="hdrStamp">AFTER-ACTION LOG • 0041.M42 • TURN 3</div>
         </div>
 
+        <!-- Transition overlay -->
+        <div class="dossier-overlay" id="dossierOverlay">
+          <div class="wipe"></div>
+          <div class="sweep"></div>
+        </div>
+
         <div class="content">
-          <!-- LEFT: POST-GAME -->
+          <!-- LEFT -->
           <div class="card">
             <div class="card-h">
               <div class="label">Post-Engagement Declaration</div>
@@ -613,18 +742,23 @@
             <div class="corner" id="cornerTag">Administratum Copy • Verified</div>
           </div>
 
-          <!-- RIGHT: INSTALLATION CYCLE + COUNTDOWN + NOTES -->
+          <!-- RIGHT -->
           <div class="right">
-            <div class="card">
+            <div class="card" id="dossierCard">
               <div class="card-h">
                 <div class="label">Territory Control</div>
-                <div class="pill" id="cyclePill">CYCLING INSTALLATIONS</div>
+                <div class="pill" id="cyclePill">DOSSIER INDEX</div>
               </div>
 
-              <div class="install">
+              <div class="install" id="dossierBody">
                 <div class="install-head">
-                  <div class="install-name" id="instName">Bastior Prime</div>
+                  <div class="install-name type" id="instName">Bastior Prime</div>
                   <div class="install-meta" id="instMeta">1 / 6 • Every 8s</div>
+                </div>
+
+                <div class="dossier-stamp">
+                  <div class="stamp-left type" id="instStamp">FILE: BASTIOR PRIME • CLEARANCE: MAGENTA</div>
+                  <div class="stamp-right" id="instSeal">SEAL: VERIFIED</div>
                 </div>
 
                 <div class="bars">
@@ -673,7 +807,7 @@
             <div class="card">
               <div class="card-h">
                 <div class="label">Post-Game Notes</div>
-                <div class="pill" id="notesPill">RECORDED</div>
+                <div class="pill">RECORDED</div>
               </div>
               <div class="list" id="notesList"></div>
             </div>
@@ -700,7 +834,7 @@
           <div class="row">
             <label>Result Kicker</label>
             <input id="e_resultKicker" type="text" />
-            <label>Result Main (big word)</label>
+            <label>Result Main</label>
             <input id="e_resultMain" type="text" />
             <label>Winner Line</label>
             <input id="e_resultWinner" type="text" />
@@ -762,12 +896,14 @@
           <div class="row">
             <label>Cycle Interval (seconds)</label>
             <input id="e_cycleSeconds" type="number" min="2" step="1" />
-            <label>Installation Hint Line (shown under bars)</label>
+            <label>Installation Hint Line</label>
             <input id="e_instHint" type="text" />
+            <label>Stamp Templates (optional)</label>
+            <textarea id="e_stampTemplates" placeholder="FILE: {NAME} • CLEARANCE: MAGENTA&#10;INDEX: {I}/{N} • ARCHIVE: BASTIOR"></textarea>
           </div>
 
           <div class="row">
-            <label>Installations (one per line, format: Name | Def% | Att% | Rai%)</label>
+            <label>Installations (one per line: Name | Def% | Att% | Rai%)</label>
             <textarea id="e_installations"></textarea>
           </div>
 
@@ -810,12 +946,13 @@
             <button class="btn" id="btnClose">Close</button>
           </div>
         </div>
+
       </div>
     </div>
   </div>
 
   <script>
-    const STORAGE_KEY = "bastior_postgame_campaign_cycle_v1";
+    const STORAGE_KEY = "bastior_postgame_campaign_dossier_v1";
 
     const DEFAULTS = {
       hdrTitle: "CAMPAIGN RECORD: BASTIOR SUB-SECTOR",
@@ -848,6 +985,14 @@
 
       cycleSeconds: 8,
       instHint: "Warp lanes contested. Supply lines unstable.",
+
+      stampTemplates: [
+        "FILE: {NAME} • CLEARANCE: MAGENTA",
+        "INDEX: {I}/{N} • ARCHIVE: BASTIOR",
+        "THEATER: {NAME} • SECTOR: OUTER REACH",
+        "COGITATOR: SYNC OK • NODE {I}-{N}"
+      ],
+
       installations: [
         { name: "Bastior Prime", def: 100, att: 0,  rai: 0  },
         { name: "Trinaxis Minor", def: 75,  att: 25, rai: 0  },
@@ -859,7 +1004,7 @@
 
       timerVisible: true,
       timerLabel: "NEXT ENGAGEMENT IN",
-      timerStartSeconds: 300,      // 05:00
+      timerStartSeconds: 300,
       timerAutoHide: true,
 
       notes: [
@@ -874,10 +1019,10 @@
     const $ = (id) => document.getElementById(id);
     const qs = (name) => new URLSearchParams(location.search).get(name);
 
-    function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+    function clamp(n,a,b){ return Math.max(a, Math.min(b,n)); }
 
     function parseMMSS(s){
-      const m = String(s || "").trim().match(/^(\d{1,3}):(\d{2})$/);
+      const m = String(s||"").trim().match(/^(\d{1,3}):(\d{2})$/);
       if (!m) return null;
       const mm = parseInt(m[1],10);
       const ss = parseInt(m[2],10);
@@ -887,36 +1032,35 @@
 
     function fmtMMSS(total){
       total = Math.max(0, Math.floor(total));
-      const mm = Math.floor(total / 60);
-      const ss = total % 60;
-      return String(mm).padStart(2,"0") + ":" + String(ss).padStart(2,"0");
+      const mm = Math.floor(total/60);
+      const ss = total%60;
+      return String(mm).padStart(2,"0")+":"+String(ss).padStart(2,"0");
     }
 
-    function safeJsonParse(raw){
-      try{ return JSON.parse(raw); } catch(e){ return null; }
-    }
+    function safeJsonParse(raw){ try{ return JSON.parse(raw);}catch(e){ return null; } }
 
     function normalizeData(obj){
-      const d = { ...DEFAULTS, ...(obj || {}) };
+      const d = { ...DEFAULTS, ...(obj||{}) };
 
-      // Ensure installations array
       if (!Array.isArray(d.installations)) d.installations = DEFAULTS.installations.slice();
       d.installations = d.installations
         .map(x => ({
           name: String(x?.name ?? "").trim() || "Unknown",
-          def: clamp(parseInt(x?.def ?? 0, 10) || 0, 0, 100),
-          att: clamp(parseInt(x?.att ?? 0, 10) || 0, 0, 100),
-          rai: clamp(parseInt(x?.rai ?? 0, 10) || 0, 0, 100),
+          def: clamp(parseInt(x?.def ?? 0,10) || 0, 0, 100),
+          att: clamp(parseInt(x?.att ?? 0,10) || 0, 0, 100),
+          rai: clamp(parseInt(x?.rai ?? 0,10) || 0, 0, 100),
         }))
         .filter(x => x.name.length);
-
       if (!d.installations.length) d.installations = DEFAULTS.installations.slice();
 
-      // Notes
-      if (!Array.isArray(d.notes)) {
-        d.notes = String(d.notes || "").split("\n").map(s=>s.trim()).filter(Boolean);
-      }
+      if (!Array.isArray(d.notes)) d.notes = String(d.notes||"").split("\n").map(s=>s.trim()).filter(Boolean);
       d.notes = d.notes.map(s=>String(s).trim()).filter(Boolean);
+
+      if (!Array.isArray(d.stampTemplates)) {
+        d.stampTemplates = String(d.stampTemplates||"").split("\n").map(s=>s.trim()).filter(Boolean);
+      }
+      d.stampTemplates = d.stampTemplates.map(s=>String(s).trim()).filter(Boolean);
+      if (!d.stampTemplates.length) d.stampTemplates = DEFAULTS.stampTemplates.slice();
 
       d.cycleSeconds = clamp(parseInt(d.cycleSeconds,10) || DEFAULTS.cycleSeconds, 2, 120);
 
@@ -967,17 +1111,11 @@
       if (!raw) return null;
       return safeJsonParse(raw);
     }
-
-    function saveStored(data){
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    }
-
-    function clearStored(){
-      localStorage.removeItem(STORAGE_KEY);
-    }
+    function saveStored(data){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+    function clearStored(){ localStorage.removeItem(STORAGE_KEY); }
 
     // -------------------------
-    // Cycling state
+    // State
     // -------------------------
     let state = {
       data: normalizeData(DEFAULTS),
@@ -987,10 +1125,53 @@
       countdownVisible: true,
       countdownRunning: false,
       countdownLeft: 0,
-      countdownTick: null
+      countdownTick: null,
+
+      stampIndex: 0
     };
 
-    function renderInstallation(){
+    function pickStamp(name, i, n){
+      const templates = state.data.stampTemplates || DEFAULTS.stampTemplates;
+      const t = templates[state.stampIndex % templates.length] || templates[0] || "FILE: {NAME}";
+      state.stampIndex = (state.stampIndex + 1) % templates.length;
+
+      return t
+        .replaceAll("{NAME}", name.toUpperCase())
+        .replaceAll("{I}", String(i+1))
+        .replaceAll("{N}", String(n));
+    }
+
+    function setTyping(on){
+      const body = document.body;
+      body.classList.toggle("typing", !!on);
+    }
+
+    // Trigger 40k dossier flip animation
+    async function dossierFlipTransition(updateFn){
+      const frame = $("frame");
+
+      // Phase A: wipe begins
+      frame.classList.add("cycling");
+      setTyping(false);
+
+      // small delay so class applies before update
+      await new Promise(r => setTimeout(r, 180));
+
+      // Update content mid-wipe
+      updateFn();
+
+      // Phase B: settle-in
+      frame.classList.remove("cycling");
+      frame.classList.add("settle");
+
+      // Typewriter “blink” (very subtle)
+      setTyping(true);
+      setTimeout(() => setTyping(false), 520);
+
+      setTimeout(() => frame.classList.remove("settle"), 260);
+    }
+
+    function renderInstallationInstant(){
       const d = state.data;
       const list = d.installations;
       const idx = clamp(state.index, 0, Math.max(0, list.length - 1));
@@ -998,6 +1179,12 @@
 
       setText("instName", inst.name);
       setText("instMeta", `${idx + 1} / ${list.length} • Every ${d.cycleSeconds}s`);
+
+      // stamp + seal
+      const stamp = pickStamp(inst.name, idx, list.length);
+      setText("instStamp", stamp);
+      setText("instSeal", "SEAL: VERIFIED");
+
       setText("instHint", d.instHint);
 
       setText("teamDefName", d.teamDefName);
@@ -1013,6 +1200,10 @@
       setText("pctRai", inst.rai + "%");
     }
 
+    function renderInstallationFancy(){
+      dossierFlipTransition(renderInstallationInstant);
+    }
+
     function stopCycle(){
       if (state.cycleTimer) clearInterval(state.cycleTimer);
       state.cycleTimer = null;
@@ -1022,18 +1213,17 @@
       stopCycle();
       state.cycleTimer = setInterval(() => {
         state.index = (state.index + 1) % state.data.installations.length;
-        renderInstallation();
+        renderInstallationFancy();
       }, state.data.cycleSeconds * 1000);
     }
 
     function nextInstall(){
       state.index = (state.index + 1) % state.data.installations.length;
-      renderInstallation();
+      renderInstallationFancy();
     }
-
     function prevInstall(){
       state.index = (state.index - 1 + state.data.installations.length) % state.data.installations.length;
-      renderInstallation();
+      renderInstallationFancy();
     }
 
     // -------------------------
@@ -1047,7 +1237,7 @@
     function renderCountdown(){
       setText("timerLabel", state.data.timerLabel);
       setText("timerBig", fmtMMSS(state.countdownLeft));
-      // Auto hide at 0 if enabled
+
       if (state.countdownLeft <= 0 && state.data.timerAutoHide){
         setCountdownVisible(false);
         state.countdownRunning = false;
@@ -1072,7 +1262,6 @@
     }
 
     function toggleCountdownRun(){
-      // If hidden and user starts it, show it
       if (!state.countdownVisible) setCountdownVisible(true);
       state.countdownRunning = !state.countdownRunning;
     }
@@ -1080,10 +1269,6 @@
     function resetCountdown(){
       state.countdownLeft = state.data.timerStartSeconds;
       state.countdownRunning = false;
-      if (state.data.timerAutoHide) {
-        // don’t force show; but if hidden, keep hidden
-        // if visible, keep visible
-      }
       renderCountdown();
     }
 
@@ -1117,17 +1302,15 @@
       applyAccent(data);
       applyTeamColors(data);
 
-      // Notes
       renderNotes(data.notes);
 
-      // Installation cycle
+      // Dossier
       state.index = clamp(state.index, 0, data.installations.length - 1);
-      renderInstallation();
+      renderInstallationInstant();
       startCycle();
 
       // Countdown
       setCountdownVisible(data.timerVisible);
-      // Keep remaining time if already running; otherwise reset to start
       if (!state.countdownTick) startCountdownTick();
       if (!state.countdownRunning && state.countdownLeft === 0) {
         state.countdownLeft = data.timerStartSeconds;
@@ -1138,11 +1321,9 @@
     }
 
     // -------------------------
-    // Editor
+    // Editor helpers
     // -------------------------
-    function openEditor(open){
-      $("editor").classList.toggle("hidden", !open);
-    }
+    function openEditor(open){ $("editor").classList.toggle("hidden", !open); }
 
     function installationsToText(list){
       return (list || []).map(x => `${x.name} | ${x.def} | ${x.att} | ${x.rai}`).join("\n");
@@ -1198,6 +1379,8 @@
       $("e_cycleSeconds").value = d.cycleSeconds;
       $("e_instHint").value = d.instHint;
 
+      $("e_stampTemplates").value = (d.stampTemplates || []).join("\n");
+
       $("e_installations").value = installationsToText(d.installations);
 
       $("e_timerVisible").value = d.timerVisible ? "1" : "0";
@@ -1245,6 +1428,8 @@
 
         cycleSeconds: parseInt($("e_cycleSeconds").value, 10),
         instHint: $("e_instHint").value,
+
+        stampTemplates: $("e_stampTemplates").value.split("\n"),
 
         installations: textToInstallations($("e_installations").value),
 
@@ -1294,8 +1479,8 @@
 
       const stored = loadStored();
       const initial = normalizeData(stored || DEFAULTS);
+
       state.data = initial;
-      // initialize countdown from stored start
       state.countdownLeft = initial.timerStartSeconds;
       setCountdownVisible(initial.timerVisible);
 
@@ -1309,10 +1494,12 @@
       $("btnApply").addEventListener("click", () => {
         const d = readEditor();
 
-        // If user changes start time, reset countdown to that start
         const prevStart = state.data.timerStartSeconds;
         const nextStart = d.timerStartSeconds;
         const startChanged = prevStart !== nextStart;
+
+        state.index = clamp(state.index, 0, d.installations.length - 1);
+        state.stampIndex = 0;
 
         const next = renderAll(d);
         saveStored(next);
@@ -1333,15 +1520,16 @@
 
       $("btnExport").addEventListener("click", () => {
         const d = readEditor();
-        downloadJson("postgame-campaign-export.json", d);
+        downloadJson("postgame-campaign-dossier-export.json", d);
       });
 
       $("btnImport").addEventListener("click", () => {
         const imported = promptImport();
         if (!imported) return;
+
         const d = normalizeData(imported);
-        // Reset cycling to 0 so import feels deterministic
         state.index = 0;
+        state.stampIndex = 0;
         state.countdownLeft = d.timerStartSeconds;
         state.countdownRunning = false;
 
@@ -1353,6 +1541,7 @@
       $("btnClear").addEventListener("click", () => {
         clearStored();
         state.index = 0;
+        state.stampIndex = 0;
         state.countdownLeft = DEFAULTS.timerStartSeconds;
         state.countdownRunning = false;
 
@@ -1369,19 +1558,18 @@
 
         if ((e.ctrlKey || e.metaKey) && key === "e"){
           e.preventDefault();
-          const isOpen = !$("editor").classList.contains("hidden");
-          if (!isOpen){
+          const isHidden = $("editor").classList.contains("hidden");
+          if (isHidden){
             const d = normalizeData(loadStored() || state.data || DEFAULTS);
             fillEditor(d);
           }
-          openEditor(isOpen);
+          openEditor(isHidden);
           return;
         }
 
         if ((e.ctrlKey || e.metaKey) && key === "t"){
           e.preventDefault();
           setCountdownVisible(!state.countdownVisible);
-          // persist visibility toggle
           const d = normalizeData(loadStored() || state.data || DEFAULTS);
           d.timerVisible = state.countdownVisible;
           saveStored(d);
@@ -1396,7 +1584,7 @@
         }
       });
 
-      // Start countdown tick loop
+      // Start countdown ticking
       startCountdownTick();
       renderCountdown();
     })();
