@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>40k Post-Game Results</title>
+  <title>40k Post-Game + Campaign Cycle</title>
 
   <style>
     :root{
@@ -16,6 +16,7 @@
       --gold:#d1a14b;
       --red:#cc3b3b;
       --green:#3fbf7f;
+      --blue:#4aa6ff;
 
       --panel: rgba(10, 12, 18, 0.72);
       --panel2: rgba(14, 18, 26, 0.68);
@@ -24,11 +25,16 @@
 
       --radius: 18px;
       --shadow: 0 20px 60px rgba(0,0,0,0.55);
-      --safe: 72px; /* safe margin for 1080p */
+      --safe: 72px;
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       --sans: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 
       --result-accent: var(--gold);
+
+      /* Team colors (editable via editor with custom hex too) */
+      --c-def: #d1a14b; /* Defenders */
+      --c-att: #cc3b3b; /* Attackers */
+      --c-rai: #4aa6ff; /* Raiders */
     }
 
     * { box-sizing: border-box; }
@@ -41,12 +47,8 @@
       overflow:hidden;
     }
 
-    /* subtle star/noise feel without heavy assets */
-    .noise {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      opacity: 0.10;
+    .noise{
+      position: fixed; inset: 0; pointer-events: none; opacity: 0.10;
       background-image:
         radial-gradient(circle at 20% 30%, rgba(255,255,255,.08) 0 1px, transparent 2px),
         radial-gradient(circle at 60% 70%, rgba(255,255,255,.06) 0 1px, transparent 2px),
@@ -57,10 +59,7 @@
     }
 
     .scanlines{
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      opacity: 0.25;
+      position: fixed; inset: 0; pointer-events: none; opacity: 0.25;
       background: repeating-linear-gradient(
         to bottom,
         rgba(255,255,255,0.05),
@@ -72,9 +71,7 @@
     }
 
     .flicker{
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
+      position: fixed; inset: 0; pointer-events: none;
       animation: flicker 7s infinite;
       background: radial-gradient(700px 420px at 50% 30%, rgba(209,161,75,0.06), transparent 55%);
       opacity: 0.45;
@@ -90,19 +87,9 @@
       78% { opacity: 0.40; }
     }
 
+    .stage{ position: fixed; inset: 0; display:grid; place-items:center; }
     .wrap{
-      width: 1920px;
-      height: 1080px;
-      position: relative;
-      transform-origin: top left;
-    }
-
-    /* Scale to viewport while preserving 16:9 layout */
-    .stage{
-      position: fixed;
-      inset: 0;
-      display: grid;
-      place-items: center;
+      width: 1920px; height: 1080px; position: relative; transform-origin: top left;
     }
 
     .frame{
@@ -114,7 +101,6 @@
       border: 1px solid var(--stroke2);
       overflow: hidden;
     }
-
     .frame::before{
       content:"";
       position:absolute;
@@ -126,26 +112,19 @@
     }
 
     .header{
-      position: absolute;
-      top: 0;
-      left: 0; right: 0;
+      position:absolute; top:0; left:0; right:0;
       padding: 22px 28px;
       background: linear-gradient(90deg, rgba(209,161,75,0.16), rgba(209,161,75,0.06) 55%, rgba(233,230,220,0.02));
       border-bottom: 1px solid var(--stroke2);
-      display:flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 18px;
+      display:flex; align-items: baseline; justify-content: space-between; gap: 18px;
     }
-
     .title{
       letter-spacing: 0.14em;
       text-transform: uppercase;
-      font-weight: 700;
+      font-weight: 800;
       font-size: 18px;
       color: rgba(233,230,220,0.92);
     }
-
     .sub{
       font-family: var(--mono);
       font-size: 14px;
@@ -156,12 +135,11 @@
     }
 
     .content{
-      position: absolute;
-      top: 86px;
-      left: 0; right: 0; bottom: 0;
+      position:absolute;
+      top: 86px; left:0; right:0; bottom:0;
       padding: 28px;
-      display: grid;
-      grid-template-columns: 1.2fr 0.8fr;
+      display:grid;
+      grid-template-columns: 1.25fr 0.75fr;
       gap: 22px;
     }
 
@@ -169,19 +147,14 @@
       background: var(--panel);
       border: 1px solid var(--stroke2);
       border-radius: var(--radius);
-      overflow: hidden;
+      overflow:hidden;
     }
-
     .card .card-h{
       padding: 16px 18px;
       border-bottom: 1px solid rgba(233,230,220,0.08);
       background: linear-gradient(180deg, rgba(233,230,220,0.03), transparent);
-      display:flex;
-      align-items:center;
-      justify-content: space-between;
-      gap: 14px;
+      display:flex; align-items:center; justify-content: space-between; gap:14px;
     }
-
     .label{
       font-family: var(--mono);
       font-size: 13px;
@@ -189,7 +162,6 @@
       text-transform: uppercase;
       color: rgba(233,230,220,0.65);
     }
-
     .pill{
       font-family: var(--mono);
       font-size: 12px;
@@ -203,20 +175,15 @@
       white-space: nowrap;
     }
 
-    /* RESULT BLOCK */
+    /* LEFT: post-game declaration */
     .result{
-      padding: 26px 22px 20px;
-      display: grid;
-      gap: 18px;
-    }
-
-    .result-top{
+      padding: 24px 22px 18px;
       display:grid;
-      gap: 8px;
-      text-align: center;
-      padding: 10px 10px 0;
+      gap: 16px;
     }
-
+    .result-top{
+      display:grid; gap:8px; text-align:center; padding-top: 8px;
+    }
     .result-kicker{
       font-family: var(--mono);
       text-transform: uppercase;
@@ -224,22 +191,20 @@
       font-size: 13px;
       color: rgba(233,230,220,0.55);
     }
-
     .result-main{
       text-transform: uppercase;
       letter-spacing: 0.16em;
       font-weight: 900;
-      font-size: 56px;
+      font-size: 54px;
       color: var(--result-accent);
       text-shadow: 0 0 22px rgba(209,161,75,0.12);
       line-height: 1.05;
     }
-
     .result-winner{
       text-transform: uppercase;
       letter-spacing: 0.12em;
       font-weight: 800;
-      font-size: 22px;
+      font-size: 20px;
       color: rgba(233,230,220,0.92);
     }
 
@@ -248,34 +213,29 @@
       grid-template-columns: 1fr auto 1fr;
       align-items:center;
       gap: 14px;
-      padding: 10px 0 0;
+      padding-top: 6px;
     }
-
     .side{
       border-radius: 16px;
       border: 1px solid rgba(233,230,220,0.10);
       background: rgba(0,0,0,0.20);
       padding: 14px 14px 12px;
-      display:grid;
-      gap: 8px;
+      display:grid; gap:8px;
     }
-
-    .side .side-name{
-      font-weight: 800;
+    .side-name{
+      font-weight: 850;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      font-size: 18px;
+      font-size: 17px;
       color: rgba(233,230,220,0.92);
     }
-
-    .side .side-sub{
+    .side-sub{
       font-family: var(--mono);
       text-transform: uppercase;
       letter-spacing: 0.14em;
       font-size: 12px;
       color: rgba(233,230,220,0.58);
     }
-
     .vs{
       font-family: var(--mono);
       letter-spacing: 0.22em;
@@ -288,14 +248,12 @@
       background: rgba(0,0,0,0.22);
     }
 
-    /* DETAILS BLOCK */
     .grid{
       padding: 18px;
       display:grid;
       grid-template-columns: 1fr 1fr;
       gap: 14px;
     }
-
     .kv{
       background: rgba(0,0,0,0.20);
       border: 1px solid rgba(233,230,220,0.10);
@@ -313,33 +271,172 @@
       color: rgba(233,230,220,0.55);
     }
     .v{
-      font-weight: 700;
+      font-weight: 720;
       letter-spacing: 0.02em;
       color: rgba(233,230,220,0.92);
-      font-size: 16px;
+      font-size: 15px;
       line-height: 1.25;
     }
     .v.mono{ font-family: var(--mono); font-weight: 650; font-size: 14px; }
 
-    /* OUTCOME BLOCK */
+    /* RIGHT: cycling installation + countdown */
+    .right{
+      display:grid;
+      grid-template-rows: auto auto 1fr;
+      gap: 22px;
+    }
+
+    .install{
+      padding: 16px 18px 18px;
+      display:grid;
+      gap: 14px;
+    }
+
+    .install-head{
+      display:flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 14px;
+    }
+    .install-name{
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 22px;
+      color: rgba(233,230,220,0.95);
+      line-height: 1.1;
+    }
+    .install-meta{
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(233,230,220,0.58);
+      white-space: nowrap;
+    }
+
+    .bars{
+      display:grid;
+      gap: 10px;
+    }
+    .bar-row{
+      display:grid;
+      grid-template-columns: 170px 1fr 54px;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(0,0,0,0.18);
+      border: 1px solid rgba(233,230,220,0.10);
+    }
+    .team{
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(233,230,220,0.78);
+      overflow:hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .track{
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(233,230,220,0.08);
+      border: 1px solid rgba(233,230,220,0.10);
+      overflow:hidden;
+      position: relative;
+    }
+    .fill{
+      position:absolute; left:0; top:0; bottom:0;
+      width: 0%;
+      border-radius: 999px;
+      filter: saturate(1.05);
+      opacity: 0.95;
+      transition: width 500ms ease;
+    }
+    .pct{
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(233,230,220,0.82);
+      text-align: right;
+    }
+
+    .fill.def{ background: var(--c-def); box-shadow: 0 0 18px rgba(209,161,75,0.14); }
+    .fill.att{ background: var(--c-att); box-shadow: 0 0 18px rgba(204,59,59,0.14); }
+    .fill.rai{ background: var(--c-rai); box-shadow: 0 0 18px rgba(74,166,255,0.14); }
+
+    .install-footer{
+      display:flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding-top: 2px;
+    }
+    .hint-mini{
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(233,230,220,0.50);
+    }
+
+    /* Countdown card */
+    .countdown{
+      padding: 18px;
+      display:grid;
+      gap: 12px;
+    }
+    .timer-row{
+      display:flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .timer-label{
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(233,230,220,0.62);
+    }
+    .timer-big{
+      font-family: var(--mono);
+      font-size: 46px;
+      letter-spacing: 0.12em;
+      font-weight: 900;
+      color: rgba(233,230,220,0.94);
+      text-shadow: 0 0 18px rgba(0,0,0,0.35);
+      line-height: 1.0;
+    }
+    .timer-sub{
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(233,230,220,0.55);
+    }
+    .timer-hidden{ display:none !important; }
+
+    /* Outcome list (still here, but now “Post-Game Notes”) */
     .list{
       padding: 18px 18px 16px;
       display:grid;
       gap: 12px;
     }
-
     .line{
       display:flex;
       gap: 10px;
-      align-items: flex-start;
+      align-items:flex-start;
       padding: 10px 12px;
       border-radius: 14px;
       background: rgba(0,0,0,0.18);
       border: 1px solid rgba(233,230,220,0.10);
     }
     .dot{
-      width: 10px;
-      height: 10px;
+      width: 10px; height: 10px;
       border-radius: 999px;
       margin-top: 5px;
       background: var(--result-accent);
@@ -348,40 +445,30 @@
     }
     .txt{
       color: rgba(233,230,220,0.88);
-      font-size: 16px;
+      font-size: 15px;
       letter-spacing: 0.01em;
       line-height: 1.25;
     }
-    .small{
-      color: rgba(233,230,220,0.64);
-      font-size: 13px;
+
+    .corner{
+      position:absolute;
+      bottom: 18px;
+      left: 20px;
       font-family: var(--mono);
-      letter-spacing: 0.12em;
+      font-size: 12px;
+      letter-spacing: 0.18em;
       text-transform: uppercase;
-      margin-top: 2px;
+      color: rgba(233,230,220,0.38);
     }
 
-    /* RIGHT COLUMN STACK */
-    .right{
-      display:grid;
-      grid-template-rows: auto 1fr;
-      gap: 22px;
-    }
+    .hidden{ display:none !important; }
 
-    .split{
-      display:grid;
-      grid-template-rows: auto auto;
-      gap: 22px;
-    }
-
-    .hidden { display:none !important; }
-
-    /* EDIT PANEL (Hidden by default) */
+    /* EDITOR */
     .editor{
       position: absolute;
       right: 22px;
       top: 108px;
-      width: 520px;
+      width: 560px;
       max-height: calc(1080px - 140px);
       overflow: auto;
       border-radius: 18px;
@@ -392,7 +479,6 @@
       z-index: 20;
       backdrop-filter: blur(6px);
     }
-
     .editor h3{
       margin: 6px 6px 10px;
       font-size: 14px;
@@ -401,7 +487,14 @@
       font-family: var(--mono);
       color: rgba(233,230,220,0.78);
     }
-
+    .hint{
+      margin: 0 6px 10px;
+      color: rgba(233,230,220,0.55);
+      font-size: 12px;
+      line-height: 1.35;
+      font-family: var(--mono);
+      letter-spacing: 0.06em;
+    }
     .editor .row{
       display:grid;
       grid-template-columns: 1fr;
@@ -412,7 +505,6 @@
       background: rgba(0,0,0,0.24);
       margin: 8px 6px;
     }
-
     .editor label{
       font-family: var(--mono);
       font-size: 11px;
@@ -420,7 +512,6 @@
       text-transform: uppercase;
       color: rgba(233,230,220,0.62);
     }
-
     .editor input, .editor textarea, .editor select{
       width: 100%;
       border-radius: 12px;
@@ -431,16 +522,13 @@
       font-size: 14px;
       outline: none;
     }
-
-    .editor textarea{ min-height: 64px; resize: vertical; }
-
+    .editor textarea{ min-height: 66px; resize: vertical; }
     .editor .btns{
       display:flex;
       gap: 10px;
       padding: 10px 6px 6px;
       flex-wrap: wrap;
     }
-
     .btn{
       border-radius: 12px;
       border: 1px solid rgba(233,230,220,0.14);
@@ -454,32 +542,10 @@
       cursor: pointer;
       user-select: none;
     }
-
     .btn.primary{
       border-color: rgba(209,161,75,0.35);
       background: rgba(209,161,75,0.14);
       color: rgba(233,230,220,0.95);
-    }
-
-    .hint{
-      margin: 0 6px 10px;
-      color: rgba(233,230,220,0.55);
-      font-size: 12px;
-      line-height: 1.35;
-      font-family: var(--mono);
-      letter-spacing: 0.06em;
-    }
-
-    /* tiny watermark corner */
-    .corner{
-      position:absolute;
-      bottom: 18px;
-      left: 20px;
-      font-family: var(--mono);
-      font-size: 12px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: rgba(233,230,220,0.38);
     }
   </style>
 </head>
@@ -498,7 +564,7 @@
         </div>
 
         <div class="content">
-          <!-- LEFT: RESULT + DETAILS -->
+          <!-- LEFT: POST-GAME -->
           <div class="card">
             <div class="card-h">
               <div class="label">Post-Engagement Declaration</div>
@@ -547,36 +613,79 @@
             <div class="corner" id="cornerTag">Administratum Copy • Verified</div>
           </div>
 
-          <!-- RIGHT: OUTCOME + OPTIONAL HONORS -->
+          <!-- RIGHT: INSTALLATION CYCLE + COUNTDOWN + NOTES -->
           <div class="right">
             <div class="card">
               <div class="card-h">
-                <div class="label">Strategic Outcome</div>
-                <div class="pill" id="territoryPill">TERRITORY UPDATE</div>
+                <div class="label">Territory Control</div>
+                <div class="pill" id="cyclePill">CYCLING INSTALLATIONS</div>
               </div>
-              <div class="list" id="outcomeList">
-                <!-- populated by JS -->
+
+              <div class="install">
+                <div class="install-head">
+                  <div class="install-name" id="instName">Bastior Prime</div>
+                  <div class="install-meta" id="instMeta">1 / 6 • Every 8s</div>
+                </div>
+
+                <div class="bars">
+                  <div class="bar-row">
+                    <div class="team" id="teamDefName">Defenders</div>
+                    <div class="track"><div class="fill def" id="barDef"></div></div>
+                    <div class="pct" id="pctDef">100%</div>
+                  </div>
+
+                  <div class="bar-row">
+                    <div class="team" id="teamAttName">Attackers</div>
+                    <div class="track"><div class="fill att" id="barAtt"></div></div>
+                    <div class="pct" id="pctAtt">0%</div>
+                  </div>
+
+                  <div class="bar-row">
+                    <div class="team" id="teamRaiName">Raiders</div>
+                    <div class="track"><div class="fill rai" id="barRai"></div></div>
+                    <div class="pct" id="pctRai">0%</div>
+                  </div>
+                </div>
+
+                <div class="install-footer">
+                  <div class="hint-mini" id="instHint">Warp lanes contested. Supply lines unstable.</div>
+                  <div class="hint-mini" id="cycleHint">Ctrl+E edit</div>
+                </div>
               </div>
             </div>
 
-            <div class="card" id="honorsCard">
+            <div class="card" id="countdownCard">
               <div class="card-h">
-                <div class="label">Honors & Scars</div>
-                <div class="pill" id="honorsPill">OPTIONAL</div>
+                <div class="label">Next Match Countdown</div>
+                <div class="pill" id="timerPill">OPTIONAL</div>
               </div>
-              <div class="list" id="honorsList">
-                <!-- populated by JS -->
+              <div class="countdown">
+                <div class="timer-row">
+                  <div>
+                    <div class="timer-label" id="timerLabel">NEXT ENGAGEMENT IN</div>
+                    <div class="timer-sub" id="timerSub">Ctrl+Space start/pause • Ctrl+T hide/show</div>
+                  </div>
+                  <div class="timer-big" id="timerBig">05:00</div>
+                </div>
               </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h">
+                <div class="label">Post-Game Notes</div>
+                <div class="pill" id="notesPill">RECORDED</div>
+              </div>
+              <div class="list" id="notesList"></div>
             </div>
           </div>
         </div>
 
-        <!-- EDITOR PANEL -->
+        <!-- EDITOR -->
         <div class="editor hidden" id="editor">
           <h3>Overlay Editor</h3>
           <div class="hint">
-            Ctrl+E toggles this panel. Changes auto-save locally.
-            Use Export/Import for presets. Add <b>?reset=1</b> to clear saved data.
+            Ctrl+E toggles editor. Ctrl+Space starts/pauses timer. Ctrl+T toggles timer visibility.
+            Changes auto-save locally. Use Export/Import for presets. Add <b>?reset=1</b> to clear saved data.
           </div>
 
           <div class="row">
@@ -589,14 +698,10 @@
           </div>
 
           <div class="row">
-            <label>Result Kicker (small line)</label>
+            <label>Result Kicker</label>
             <input id="e_resultKicker" type="text" />
-          </div>
-          <div class="row">
             <label>Result Main (big word)</label>
             <input id="e_resultMain" type="text" />
-          </div>
-          <div class="row">
             <label>Winner Line</label>
             <input id="e_resultWinner" type="text" />
           </div>
@@ -641,13 +746,51 @@
           </div>
 
           <div class="row">
-            <label>Outcome Lines (one per line)</label>
-            <textarea id="e_outcomes"></textarea>
+            <label>Team Names</label>
+            <input id="e_teamDefName" type="text" placeholder="Defenders" />
+            <input id="e_teamAttName" type="text" placeholder="Attackers" />
+            <input id="e_teamRaiName" type="text" placeholder="Raiders" />
           </div>
 
           <div class="row">
-            <label>Honors & Scars (one per line) — leave empty to hide panel</label>
-            <textarea id="e_honors"></textarea>
+            <label>Team Colors (hex)</label>
+            <input id="e_cDef" type="text" placeholder="#d1a14b" />
+            <input id="e_cAtt" type="text" placeholder="#cc3b3b" />
+            <input id="e_cRai" type="text" placeholder="#4aa6ff" />
+          </div>
+
+          <div class="row">
+            <label>Cycle Interval (seconds)</label>
+            <input id="e_cycleSeconds" type="number" min="2" step="1" />
+            <label>Installation Hint Line (shown under bars)</label>
+            <input id="e_instHint" type="text" />
+          </div>
+
+          <div class="row">
+            <label>Installations (one per line, format: Name | Def% | Att% | Rai%)</label>
+            <textarea id="e_installations"></textarea>
+          </div>
+
+          <div class="row">
+            <label>Countdown Visible?</label>
+            <select id="e_timerVisible">
+              <option value="1">Yes</option>
+              <option value="0">No</option>
+            </select>
+            <label>Countdown Label</label>
+            <input id="e_timerLabel" type="text" />
+            <label>Countdown Start (MM:SS)</label>
+            <input id="e_timerStart" type="text" placeholder="05:00" />
+            <label>Auto-hide countdown at 00:00?</label>
+            <select id="e_timerAutoHide">
+              <option value="1">Yes</option>
+              <option value="0">No</option>
+            </select>
+          </div>
+
+          <div class="row">
+            <label>Post-Game Notes (one per line)</label>
+            <textarea id="e_notes"></textarea>
           </div>
 
           <div class="row">
@@ -657,33 +800,32 @@
 
           <div class="btns">
             <button class="btn primary" id="btnApply">Apply</button>
+            <button class="btn" id="btnPrev">Prev Install</button>
+            <button class="btn" id="btnNext">Next Install</button>
+            <button class="btn" id="btnStartPause">Start/Pause Timer</button>
+            <button class="btn" id="btnResetTimer">Reset Timer</button>
             <button class="btn" id="btnExport">Export JSON</button>
             <button class="btn" id="btnImport">Import JSON</button>
             <button class="btn" id="btnClear">Clear Saved</button>
             <button class="btn" id="btnClose">Close</button>
           </div>
         </div>
-
       </div>
     </div>
   </div>
 
   <script>
-    // =========================
-    //  CONFIG
-    // =========================
-    const STORAGE_KEY = "bastior_postgame_overlay_v1";
-    const OPTIONAL_JSON_URL = "postgame.json"; // put a file next to this HTML if you want
+    const STORAGE_KEY = "bastior_postgame_campaign_cycle_v1";
 
     const DEFAULTS = {
       hdrTitle: "CAMPAIGN RECORD: BASTIOR SUB-SECTOR",
       hdrStamp: "AFTER-ACTION LOG • 0041.M42 • TURN 3",
       pillMode: "FINAL REPORT",
+
       resultKicker: "VICTORY DECLARED",
       resultMain: "VICTORY",
       resultWinner: "DEFENDERS OF BASTIOR",
-
-      accentMode: "gold",  // gold | green | red | custom
+      accentMode: "gold",        // gold | green | red | custom
       accentCustom: "#d1a14b",
 
       leftFaction: "IMPERIUM OF MAN",
@@ -696,29 +838,97 @@
       scoreLine: "86–72 (VP)",
       roundLine: "Turn 3",
 
-      outcomes: [
-        "Bastior Prime: 75% → 100% (Defenders)",
-        "Orbital Defense Grid Reactivated",
-        "Primary Warp Route Secured"
+      teamDefName: "Defenders",
+      teamAttName: "Attackers",
+      teamRaiName: "Raiders",
+
+      cDef: "#d1a14b",
+      cAtt: "#cc3b3b",
+      cRai: "#4aa6ff",
+
+      cycleSeconds: 8,
+      instHint: "Warp lanes contested. Supply lines unstable.",
+      installations: [
+        { name: "Bastior Prime", def: 100, att: 0,  rai: 0  },
+        { name: "Trinaxis Minor", def: 75,  att: 25, rai: 0  },
+        { name: "Aurum Refuge", def: 75,  att: 0,  rai: 25 },
+        { name: "Harkanis", def: 0,  att: 75, rai: 25 },
+        { name: "Karst Forge", def: 25, att: 75, rai: 0  },
+        { name: "Void Bastion", def: 0,  att: 25, rai: 75 }
       ],
 
-      honors: [
-        "Warlord gained Battle Trait",
-        "Veteran Unit Commended",
-        "Enemy Champion Marked for Vengeance"
+      timerVisible: true,
+      timerLabel: "NEXT ENGAGEMENT IN",
+      timerStartSeconds: 300,      // 05:00
+      timerAutoHide: true,
+
+      notes: [
+        "Bastior Prime secured at full control.",
+        "Orbital defense grid reactivated.",
+        "Warp route stability improved (temporary)."
       ],
 
       cornerTag: "Administratum Copy • Verified"
     };
 
-    // =========================
-    //  UTIL
-    // =========================
     const $ = (id) => document.getElementById(id);
+    const qs = (name) => new URLSearchParams(location.search).get(name);
 
-    function qs(name){
-      const v = new URLSearchParams(location.search).get(name);
-      return v;
+    function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+
+    function parseMMSS(s){
+      const m = String(s || "").trim().match(/^(\d{1,3}):(\d{2})$/);
+      if (!m) return null;
+      const mm = parseInt(m[1],10);
+      const ss = parseInt(m[2],10);
+      if (Number.isNaN(mm) || Number.isNaN(ss)) return null;
+      return clamp(mm,0,999)*60 + clamp(ss,0,59);
+    }
+
+    function fmtMMSS(total){
+      total = Math.max(0, Math.floor(total));
+      const mm = Math.floor(total / 60);
+      const ss = total % 60;
+      return String(mm).padStart(2,"0") + ":" + String(ss).padStart(2,"0");
+    }
+
+    function safeJsonParse(raw){
+      try{ return JSON.parse(raw); } catch(e){ return null; }
+    }
+
+    function normalizeData(obj){
+      const d = { ...DEFAULTS, ...(obj || {}) };
+
+      // Ensure installations array
+      if (!Array.isArray(d.installations)) d.installations = DEFAULTS.installations.slice();
+      d.installations = d.installations
+        .map(x => ({
+          name: String(x?.name ?? "").trim() || "Unknown",
+          def: clamp(parseInt(x?.def ?? 0, 10) || 0, 0, 100),
+          att: clamp(parseInt(x?.att ?? 0, 10) || 0, 0, 100),
+          rai: clamp(parseInt(x?.rai ?? 0, 10) || 0, 0, 100),
+        }))
+        .filter(x => x.name.length);
+
+      if (!d.installations.length) d.installations = DEFAULTS.installations.slice();
+
+      // Notes
+      if (!Array.isArray(d.notes)) {
+        d.notes = String(d.notes || "").split("\n").map(s=>s.trim()).filter(Boolean);
+      }
+      d.notes = d.notes.map(s=>String(s).trim()).filter(Boolean);
+
+      d.cycleSeconds = clamp(parseInt(d.cycleSeconds,10) || DEFAULTS.cycleSeconds, 2, 120);
+
+      d.timerVisible = !!d.timerVisible;
+      d.timerAutoHide = !!d.timerAutoHide;
+      d.timerStartSeconds = clamp(parseInt(d.timerStartSeconds,10) || DEFAULTS.timerStartSeconds, 0, 24*60*60);
+
+      d.cDef = String(d.cDef || DEFAULTS.cDef).trim();
+      d.cAtt = String(d.cAtt || DEFAULTS.cAtt).trim();
+      d.cRai = String(d.cRai || DEFAULTS.cRai).trim();
+
+      return d;
     }
 
     function applyAccent(data){
@@ -729,84 +939,160 @@
       document.documentElement.style.setProperty("--result-accent", color);
     }
 
-    function setText(id, val){
-      const el = $(id);
-      if (!el) return;
-      el.textContent = (val ?? "").toString();
+    function applyTeamColors(data){
+      document.documentElement.style.setProperty("--c-def", data.cDef || DEFAULTS.cDef);
+      document.documentElement.style.setProperty("--c-att", data.cAtt || DEFAULTS.cAtt);
+      document.documentElement.style.setProperty("--c-rai", data.cRai || DEFAULTS.cRai);
     }
 
-    function renderList(containerId, lines){
-      const el = $(containerId);
+    function setText(id, val){
+      const el = $(id);
+      if (el) el.textContent = (val ?? "").toString();
+    }
+
+    function renderNotes(lines){
+      const el = $("notesList");
       el.innerHTML = "";
       (lines || []).forEach(line => {
         const row = document.createElement("div");
         row.className = "line";
-        row.innerHTML = `
-          <div class="dot"></div>
-          <div>
-            <div class="txt"></div>
-          </div>
-        `;
+        row.innerHTML = `<div class="dot"></div><div class="txt"></div>`;
         row.querySelector(".txt").textContent = line;
         el.appendChild(row);
       });
     }
 
-    function normalizeData(obj){
-      const d = { ...DEFAULTS, ...(obj || {}) };
-
-      // Ensure arrays
-      d.outcomes = Array.isArray(d.outcomes) ? d.outcomes : String(d.outcomes || "").split("\n").filter(Boolean);
-      d.honors = Array.isArray(d.honors) ? d.honors : String(d.honors || "").split("\n").filter(Boolean);
-
-      // Trim lines
-      d.outcomes = d.outcomes.map(s => String(s).trim()).filter(Boolean);
-      d.honors = d.honors.map(s => String(s).trim()).filter(Boolean);
-
-      // Defensive strings
-      for (const k of Object.keys(DEFAULTS)){
-        if (k === "outcomes" || k === "honors") continue;
-        if (d[k] == null) d[k] = DEFAULTS[k];
-      }
-      return d;
+    function loadStored(){
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      return safeJsonParse(raw);
     }
 
-    // =========================
-    //  DATA LOADING
-    // =========================
-    function loadFromStorage(){
-      try{
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return null;
-        return JSON.parse(raw);
-      }catch(e){
-        return null;
-      }
-    }
-
-    function saveToStorage(data){
+    function saveStored(data){
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     }
 
-    function clearStorage(){
+    function clearStored(){
       localStorage.removeItem(STORAGE_KEY);
     }
 
-    async function loadOptionalJson(){
-      try{
-        const res = await fetch(OPTIONAL_JSON_URL, { cache: "no-store" });
-        if (!res.ok) return null;
-        return await res.json();
-      }catch(e){
-        return null;
+    // -------------------------
+    // Cycling state
+    // -------------------------
+    let state = {
+      data: normalizeData(DEFAULTS),
+      index: 0,
+      cycleTimer: null,
+
+      countdownVisible: true,
+      countdownRunning: false,
+      countdownLeft: 0,
+      countdownTick: null
+    };
+
+    function renderInstallation(){
+      const d = state.data;
+      const list = d.installations;
+      const idx = clamp(state.index, 0, Math.max(0, list.length - 1));
+      const inst = list[idx];
+
+      setText("instName", inst.name);
+      setText("instMeta", `${idx + 1} / ${list.length} • Every ${d.cycleSeconds}s`);
+      setText("instHint", d.instHint);
+
+      setText("teamDefName", d.teamDefName);
+      setText("teamAttName", d.teamAttName);
+      setText("teamRaiName", d.teamRaiName);
+
+      $("barDef").style.width = inst.def + "%";
+      $("barAtt").style.width = inst.att + "%";
+      $("barRai").style.width = inst.rai + "%";
+
+      setText("pctDef", inst.def + "%");
+      setText("pctAtt", inst.att + "%");
+      setText("pctRai", inst.rai + "%");
+    }
+
+    function stopCycle(){
+      if (state.cycleTimer) clearInterval(state.cycleTimer);
+      state.cycleTimer = null;
+    }
+
+    function startCycle(){
+      stopCycle();
+      state.cycleTimer = setInterval(() => {
+        state.index = (state.index + 1) % state.data.installations.length;
+        renderInstallation();
+      }, state.data.cycleSeconds * 1000);
+    }
+
+    function nextInstall(){
+      state.index = (state.index + 1) % state.data.installations.length;
+      renderInstallation();
+    }
+
+    function prevInstall(){
+      state.index = (state.index - 1 + state.data.installations.length) % state.data.installations.length;
+      renderInstallation();
+    }
+
+    // -------------------------
+    // Countdown
+    // -------------------------
+    function setCountdownVisible(v){
+      state.countdownVisible = !!v;
+      $("countdownCard").classList.toggle("timer-hidden", !state.countdownVisible);
+    }
+
+    function renderCountdown(){
+      setText("timerLabel", state.data.timerLabel);
+      setText("timerBig", fmtMMSS(state.countdownLeft));
+      // Auto hide at 0 if enabled
+      if (state.countdownLeft <= 0 && state.data.timerAutoHide){
+        setCountdownVisible(false);
+        state.countdownRunning = false;
       }
     }
 
-    // =========================
-    //  RENDER
-    // =========================
-    function render(data){
+    function stopCountdownTick(){
+      if (state.countdownTick) clearInterval(state.countdownTick);
+      state.countdownTick = null;
+    }
+
+    function startCountdownTick(){
+      stopCountdownTick();
+      state.countdownTick = setInterval(() => {
+        if (!state.countdownRunning) return;
+        state.countdownLeft = Math.max(0, state.countdownLeft - 1);
+        renderCountdown();
+        if (state.countdownLeft <= 0){
+          state.countdownRunning = false;
+        }
+      }, 1000);
+    }
+
+    function toggleCountdownRun(){
+      // If hidden and user starts it, show it
+      if (!state.countdownVisible) setCountdownVisible(true);
+      state.countdownRunning = !state.countdownRunning;
+    }
+
+    function resetCountdown(){
+      state.countdownLeft = state.data.timerStartSeconds;
+      state.countdownRunning = false;
+      if (state.data.timerAutoHide) {
+        // don’t force show; but if hidden, keep hidden
+        // if visible, keep visible
+      }
+      renderCountdown();
+    }
+
+    // -------------------------
+    // Main render
+    // -------------------------
+    function renderAll(data){
       data = normalizeData(data);
+      state.data = data;
 
       setText("hdrTitle", data.hdrTitle);
       setText("hdrStamp", data.hdrStamp);
@@ -829,24 +1115,52 @@
       setText("cornerTag", data.cornerTag);
 
       applyAccent(data);
-      renderList("outcomeList", data.outcomes);
+      applyTeamColors(data);
 
-      const honorsCard = $("honorsCard");
-      if (data.honors && data.honors.length){
-        honorsCard.classList.remove("hidden");
-        renderList("honorsList", data.honors);
-      } else {
-        honorsCard.classList.add("hidden");
+      // Notes
+      renderNotes(data.notes);
+
+      // Installation cycle
+      state.index = clamp(state.index, 0, data.installations.length - 1);
+      renderInstallation();
+      startCycle();
+
+      // Countdown
+      setCountdownVisible(data.timerVisible);
+      // Keep remaining time if already running; otherwise reset to start
+      if (!state.countdownTick) startCountdownTick();
+      if (!state.countdownRunning && state.countdownLeft === 0) {
+        state.countdownLeft = data.timerStartSeconds;
       }
+      renderCountdown();
 
       return data;
     }
 
-    // =========================
-    //  EDITOR
-    // =========================
+    // -------------------------
+    // Editor
+    // -------------------------
     function openEditor(open){
       $("editor").classList.toggle("hidden", !open);
+    }
+
+    function installationsToText(list){
+      return (list || []).map(x => `${x.name} | ${x.def} | ${x.att} | ${x.rai}`).join("\n");
+    }
+
+    function textToInstallations(txt){
+      const lines = String(txt || "").split("\n").map(s=>s.trim()).filter(Boolean);
+      const out = [];
+      for (const line of lines){
+        const parts = line.split("|").map(s=>s.trim());
+        if (!parts.length) continue;
+        const name = parts[0] || "Unknown";
+        const def = clamp(parseInt(parts[1] ?? "0",10) || 0, 0, 100);
+        const att = clamp(parseInt(parts[2] ?? "0",10) || 0, 0, 100);
+        const rai = clamp(parseInt(parts[3] ?? "0",10) || 0, 0, 100);
+        out.push({ name, def, att, rai });
+      }
+      return out.length ? out : DEFAULTS.installations.slice();
     }
 
     function fillEditor(d){
@@ -873,15 +1187,31 @@
       $("e_scoreLine").value = d.scoreLine;
       $("e_roundLine").value = d.roundLine;
 
-      $("e_outcomes").value = (d.outcomes || []).join("\n");
-      $("e_honors").value = (d.honors || []).join("\n");
+      $("e_teamDefName").value = d.teamDefName;
+      $("e_teamAttName").value = d.teamAttName;
+      $("e_teamRaiName").value = d.teamRaiName;
+
+      $("e_cDef").value = d.cDef;
+      $("e_cAtt").value = d.cAtt;
+      $("e_cRai").value = d.cRai;
+
+      $("e_cycleSeconds").value = d.cycleSeconds;
+      $("e_instHint").value = d.instHint;
+
+      $("e_installations").value = installationsToText(d.installations);
+
+      $("e_timerVisible").value = d.timerVisible ? "1" : "0";
+      $("e_timerLabel").value = d.timerLabel;
+      $("e_timerStart").value = fmtMMSS(d.timerStartSeconds);
+      $("e_timerAutoHide").value = d.timerAutoHide ? "1" : "0";
+
+      $("e_notes").value = (d.notes || []).join("\n");
 
       $("e_cornerTag").value = d.cornerTag;
     }
 
     function readEditor(){
-      const accentMode = $("e_resultAccent").value;
-      const accentCustom = $("e_customAccent").value.trim();
+      const timerStart = parseMMSS($("e_timerStart").value) ?? DEFAULTS.timerStartSeconds;
 
       return normalizeData({
         hdrTitle: $("e_hdrTitle").value,
@@ -891,8 +1221,8 @@
         resultMain: $("e_resultMain").value,
         resultWinner: $("e_resultWinner").value,
 
-        accentMode,
-        accentCustom,
+        accentMode: $("e_resultAccent").value,
+        accentCustom: $("e_customAccent").value.trim(),
 
         leftFaction: $("e_leftFaction").value,
         leftPlayer: $("e_leftPlayer").value,
@@ -901,11 +1231,29 @@
 
         missionName: $("e_missionName").value,
         missionTheater: $("e_missionTheater").value,
+
         scoreLine: $("e_scoreLine").value,
         roundLine: $("e_roundLine").value,
 
-        outcomes: $("e_outcomes").value.split("\n"),
-        honors: $("e_honors").value.split("\n"),
+        teamDefName: $("e_teamDefName").value,
+        teamAttName: $("e_teamAttName").value,
+        teamRaiName: $("e_teamRaiName").value,
+
+        cDef: $("e_cDef").value,
+        cAtt: $("e_cAtt").value,
+        cRai: $("e_cRai").value,
+
+        cycleSeconds: parseInt($("e_cycleSeconds").value, 10),
+        instHint: $("e_instHint").value,
+
+        installations: textToInstallations($("e_installations").value),
+
+        timerVisible: $("e_timerVisible").value === "1",
+        timerLabel: $("e_timerLabel").value,
+        timerStartSeconds: timerStart,
+        timerAutoHide: $("e_timerAutoHide").value === "1",
+
+        notes: $("e_notes").value.split("\n"),
 
         cornerTag: $("e_cornerTag").value
       });
@@ -923,98 +1271,134 @@
     function promptImport(){
       const raw = prompt("Paste overlay JSON here:");
       if (!raw) return null;
-      try{
-        return JSON.parse(raw);
-      }catch(e){
-        alert("Invalid JSON.");
-        return null;
-      }
+      const parsed = safeJsonParse(raw);
+      if (!parsed) alert("Invalid JSON.");
+      return parsed;
     }
 
-    // =========================
-    //  INIT
-    // =========================
-    (async function init(){
-      // Auto-scale 1920x1080 to viewport
+    // -------------------------
+    // Init
+    // -------------------------
+    (function init(){
+      // Fit 1920x1080 to viewport
       const wrap = $("wrap");
       function fit(){
-        const w = window.innerWidth;
-        const h = window.innerHeight;
-        const sx = w / 1920;
-        const sy = h / 1080;
-        const s = Math.min(sx, sy);
+        const w = window.innerWidth, h = window.innerHeight;
+        const s = Math.min(w/1920, h/1080);
         wrap.style.transform = `scale(${s})`;
       }
       window.addEventListener("resize", fit);
       fit();
 
-      if (qs("reset") === "1"){
-        clearStorage();
-      }
+      if (qs("reset") === "1") clearStored();
 
-      // Priority: localStorage > postgame.json > defaults
-      const stored = loadFromStorage();
-      let data = stored;
+      const stored = loadStored();
+      const initial = normalizeData(stored || DEFAULTS);
+      state.data = initial;
+      // initialize countdown from stored start
+      state.countdownLeft = initial.timerStartSeconds;
+      setCountdownVisible(initial.timerVisible);
 
-      if (!data){
-        const json = await loadOptionalJson();
-        if (json) data = json;
-      }
-      if (!data) data = DEFAULTS;
+      const rendered = renderAll(initial);
+      saveStored(rendered);
+      fillEditor(rendered);
 
-      data = render(data);
-      saveToStorage(data); // store baseline so editor starts from something
+      if (qs("edit") === "1") openEditor(true);
 
-      fillEditor(data);
-
-      // Open editor if requested
-      if (qs("edit") === "1"){
-        openEditor(true);
-      }
-
-      // Wire buttons
+      // Buttons
       $("btnApply").addEventListener("click", () => {
         const d = readEditor();
-        render(d);
-        saveToStorage(d);
+
+        // If user changes start time, reset countdown to that start
+        const prevStart = state.data.timerStartSeconds;
+        const nextStart = d.timerStartSeconds;
+        const startChanged = prevStart !== nextStart;
+
+        const next = renderAll(d);
+        saveStored(next);
+        fillEditor(next);
+
+        if (startChanged){
+          state.countdownLeft = next.timerStartSeconds;
+          state.countdownRunning = false;
+          renderCountdown();
+        }
       });
+
+      $("btnPrev").addEventListener("click", () => { prevInstall(); });
+      $("btnNext").addEventListener("click", () => { nextInstall(); });
+
+      $("btnStartPause").addEventListener("click", () => { toggleCountdownRun(); });
+      $("btnResetTimer").addEventListener("click", () => { resetCountdown(); });
 
       $("btnExport").addEventListener("click", () => {
         const d = readEditor();
-        downloadJson("postgame-export.json", d);
+        downloadJson("postgame-campaign-export.json", d);
       });
 
       $("btnImport").addEventListener("click", () => {
         const imported = promptImport();
         if (!imported) return;
         const d = normalizeData(imported);
-        fillEditor(d);
-        render(d);
-        saveToStorage(d);
+        // Reset cycling to 0 so import feels deterministic
+        state.index = 0;
+        state.countdownLeft = d.timerStartSeconds;
+        state.countdownRunning = false;
+
+        const next = renderAll(d);
+        saveStored(next);
+        fillEditor(next);
       });
 
       $("btnClear").addEventListener("click", () => {
-        clearStorage();
-        const d = render(DEFAULTS);
-        fillEditor(d);
-        saveToStorage(d);
+        clearStored();
+        state.index = 0;
+        state.countdownLeft = DEFAULTS.timerStartSeconds;
+        state.countdownRunning = false;
+
+        const next = renderAll(DEFAULTS);
+        saveStored(next);
+        fillEditor(next);
       });
 
       $("btnClose").addEventListener("click", () => openEditor(false));
 
-      // Hotkey: Ctrl+E
+      // Hotkeys
       window.addEventListener("keydown", (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "e"){
+        const key = e.key.toLowerCase();
+
+        if ((e.ctrlKey || e.metaKey) && key === "e"){
           e.preventDefault();
           const isOpen = !$("editor").classList.contains("hidden");
           if (!isOpen){
-            // refresh editor with current saved data
-            const d = loadFromStorage() || DEFAULTS;
+            const d = normalizeData(loadStored() || state.data || DEFAULTS);
             fillEditor(d);
           }
-          openEditor(!isOpen);
+          openEditor(isOpen);
+          return;
+        }
+
+        if ((e.ctrlKey || e.metaKey) && key === "t"){
+          e.preventDefault();
+          setCountdownVisible(!state.countdownVisible);
+          // persist visibility toggle
+          const d = normalizeData(loadStored() || state.data || DEFAULTS);
+          d.timerVisible = state.countdownVisible;
+          saveStored(d);
+          state.data = d;
+          return;
+        }
+
+        if ((e.ctrlKey || e.metaKey) && e.code === "Space"){
+          e.preventDefault();
+          toggleCountdownRun();
+          return;
         }
       });
+
+      // Start countdown tick loop
+      startCountdownTick();
+      renderCountdown();
     })();
   </script>
 </body>
