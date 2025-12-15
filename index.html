@@ -36,10 +36,8 @@
       --c-att:#cc3b3b;
       --c-rai:#4aa6ff;
 
-      /* Dossier motion tuning */
       --wipe-ms: 520ms;
       --settle-ms: 260ms;
-      --type-ms: 380ms;
     }
 
     *{ box-sizing:border-box; }
@@ -63,8 +61,9 @@
       filter: blur(0.1px);
     }
 
+    /* Keep global scanlines very subtle (optional). If you want ONLY dossier scanlines, delete this. */
     .scanlines{
-      position:fixed; inset:0; pointer-events:none; opacity:0.25;
+      position:fixed; inset:0; pointer-events:none; opacity:0.12;
       background: repeating-linear-gradient(
         to bottom,
         rgba(255,255,255,0.05),
@@ -73,23 +72,6 @@
         rgba(0,0,0,0) 7px
       );
       mix-blend-mode: overlay;
-    }
-
-    .flicker{
-      position:fixed; inset:0; pointer-events:none;
-      animation: flicker 7s infinite;
-      background: radial-gradient(700px 420px at 50% 30%, rgba(209,161,75,0.06), transparent 55%);
-      opacity:0.45;
-    }
-    @keyframes flicker{
-      0%,100%{ opacity:0.26; }
-      7%{ opacity:0.38; }
-      12%{ opacity:0.22; }
-      23%{ opacity:0.44; }
-      27%{ opacity:0.30; }
-      51%{ opacity:0.36; }
-      64%{ opacity:0.24; }
-      78%{ opacity:0.40; }
     }
 
     .stage{ position:fixed; inset:0; display:grid; place-items:center; }
@@ -160,6 +142,8 @@
       border-bottom: 1px solid rgba(233,230,220,0.08);
       background: linear-gradient(180deg, rgba(233,230,220,0.03), transparent);
       display:flex; align-items:center; justify-content: space-between; gap:14px;
+      position: relative;
+      z-index: 2;
     }
     .label{
       font-family: var(--mono);
@@ -284,16 +268,58 @@
       gap: 22px;
     }
 
-    /* Dossier card */
-    .install{ padding: 16px 18px 18px; display:grid; gap:14px; }
+    /* ---- LOCAL FLICKER ZONE (ONLY DOSSIER CARD) ---- */
+    .flicker-zone{
+      position: relative;
+      isolation: isolate; /* ensure overlays blend only inside */
+      overflow: hidden;
+      border-radius: var(--radius);
+    }
+    .local-flicker{
+      position:absolute;
+      inset: 0;
+      pointer-events:none;
+      z-index: 1; /* below header/content text which are z=2+ */
+      opacity: 0.0;
+      mix-blend-mode: overlay;
+      background: radial-gradient(700px 420px at 50% 35%, rgba(209,161,75,0.10), transparent 60%);
+      animation: localFlicker 7s infinite;
+    }
+    @keyframes localFlicker{
+      0%, 100% { opacity: 0.05; }
+      7% { opacity: 0.18; }
+      12% { opacity: 0.06; }
+      23% { opacity: 0.22; }
+      27% { opacity: 0.10; }
+      51% { opacity: 0.16; }
+      64% { opacity: 0.07; }
+      78% { opacity: 0.20; }
+    }
+    /* Optional: scanlines ONLY inside dossier card */
+    .local-scan{
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      z-index: 1;
+      opacity: 0.14;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,0.05),
+        rgba(255,255,255,0.05) 1px,
+        rgba(0,0,0,0) 4px,
+        rgba(0,0,0,0) 7px
+      );
+      mix-blend-mode: overlay;
+    }
 
+    /* Dossier body */
+    .install{ padding: 16px 18px 18px; display:grid; gap:14px; position: relative; z-index: 2; }
     .install-head{
       display:flex;
       align-items: baseline;
       justify-content: space-between;
       gap: 14px;
     }
-
     .install-name{
       font-weight: 900;
       letter-spacing: 0.10em;
@@ -311,7 +337,6 @@
       white-space: nowrap;
     }
 
-    /* Dossier “stamp” line */
     .dossier-stamp{
       font-family: var(--mono);
       font-size: 12px;
@@ -328,10 +353,7 @@
       gap: 10px;
     }
     .stamp-left{ overflow:hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .stamp-right{
-      color: rgba(233,230,220,0.42);
-      white-space: nowrap;
-    }
+    .stamp-right{ color: rgba(233,230,220,0.42); white-space: nowrap; }
 
     .bars{ display:grid; gap:10px; }
 
@@ -428,7 +450,7 @@
     }
     .timer-hidden{ display:none !important; }
 
-    /* Notes list */
+    /* Notes */
     .list{ padding: 18px 18px 16px; display:grid; gap:12px; }
     .line{
       display:flex;
@@ -468,18 +490,14 @@
 
     .hidden{ display:none !important; }
 
-    /* -------------------------
-       40k Dossier transition layer
-       ------------------------- */
+    /* Transition overlay (still global, but only used during flips) */
     .dossier-overlay{
       position:absolute;
       inset: 0;
       pointer-events:none;
-      z-index: 4; /* above content */
+      z-index: 4;
       opacity: 0;
     }
-
-    /* Wipe plate */
     .wipe{
       position:absolute;
       inset: 0;
@@ -494,11 +512,7 @@
         );
       filter: blur(0.4px);
       opacity: 0.95;
-      border-left: 1px solid rgba(233,230,220,0.05);
-      border-right: 1px solid rgba(233,230,220,0.05);
     }
-
-    /* Scan sweep */
     .sweep{
       position:absolute;
       left:-30%;
@@ -508,50 +522,16 @@
       background: linear-gradient(90deg, transparent, rgba(209,161,75,0.10), transparent);
       opacity: 0.0;
     }
-
-    /* When cycling */
     .cycling .dossier-overlay{ opacity: 1; }
-    .cycling .wipe{
-      animation: wipe var(--wipe-ms) ease forwards;
-    }
-    .cycling .sweep{
-      animation: sweep calc(var(--wipe-ms) + 120ms) ease forwards;
-    }
-    .cycling .install-name,
-    .cycling .dossier-stamp,
-    .cycling .bars,
-    .cycling .install-footer{
-      animation: dimout var(--wipe-ms) ease forwards;
-    }
-    .settle .install-name,
-    .settle .dossier-stamp,
-    .settle .bars,
-    .settle .install-footer{
-      animation: settle var(--settle-ms) ease forwards;
-    }
+    .cycling .wipe{ animation: wipe var(--wipe-ms) ease forwards; }
+    .cycling .sweep{ animation: sweep calc(var(--wipe-ms) + 120ms) ease forwards; }
+    .cycling #dossierCard{ animation: jitter 140ms ease 2; }
 
-    /* Micro jitter on the whole dossier card during flip */
-    .cycling #dossierCard{
-      animation: jitter 140ms ease 2;
-    }
-
-    @keyframes wipe{
-      0%{ transform: translateX(-110%); }
-      100%{ transform: translateX(110%); }
-    }
+    @keyframes wipe{ 0%{ transform: translateX(-110%);} 100%{ transform: translateX(110%);} }
     @keyframes sweep{
       0%{ transform: translateX(0); opacity: 0.0; }
       30%{ opacity: 0.85; }
       100%{ transform: translateX(480%); opacity: 0.0; }
-    }
-    @keyframes dimout{
-      0%{ opacity: 1; filter: blur(0px); }
-      40%{ opacity: 0.35; filter: blur(0.4px); }
-      100%{ opacity: 0.75; filter: blur(0px); }
-    }
-    @keyframes settle{
-      0%{ transform: translateY(-1px); opacity: 0.35; }
-      100%{ transform: translateY(0px); opacity: 1; }
     }
     @keyframes jitter{
       0%{ transform: translateX(0); }
@@ -561,32 +541,7 @@
       100%{ transform: translateX(0); }
     }
 
-    /* Typewriter reveal (subtle) */
-    .type{
-      position: relative;
-    }
-    .type::after{
-      content:"";
-      position:absolute;
-      right:-6px;
-      top: 0.1em;
-      width: 2px;
-      height: 1em;
-      background: rgba(233,230,220,0.55);
-      opacity: 0;
-    }
-    .typing .type::after{
-      opacity: 1;
-      animation: caret 620ms steps(1) infinite;
-    }
-    @keyframes caret{
-      0%, 49%{ opacity: 1; }
-      50%, 100%{ opacity: 0; }
-    }
-
-    /* -------------------------
-       EDITOR
-       ------------------------- */
+    /* EDITOR */
     .editor{
       position: absolute;
       right: 22px;
@@ -676,7 +631,6 @@
 <body>
   <div class="noise"></div>
   <div class="scanlines"></div>
-  <div class="flicker"></div>
 
   <div class="stage">
     <div class="wrap" id="wrap">
@@ -686,7 +640,6 @@
           <div class="sub" id="hdrStamp">AFTER-ACTION LOG • 0041.M42 • TURN 3</div>
         </div>
 
-        <!-- Transition overlay -->
         <div class="dossier-overlay" id="dossierOverlay">
           <div class="wipe"></div>
           <div class="sweep"></div>
@@ -744,20 +697,24 @@
 
           <!-- RIGHT -->
           <div class="right">
-            <div class="card" id="dossierCard">
+            <!-- DOSSIER CARD (ONLY THING THAT FLICKERS) -->
+            <div class="card flicker-zone" id="dossierCard">
+              <div class="local-flicker"></div>
+              <div class="local-scan"></div>
+
               <div class="card-h">
                 <div class="label">Territory Control</div>
                 <div class="pill" id="cyclePill">DOSSIER INDEX</div>
               </div>
 
-              <div class="install" id="dossierBody">
+              <div class="install">
                 <div class="install-head">
-                  <div class="install-name type" id="instName">Bastior Prime</div>
+                  <div class="install-name" id="instName">Bastior Prime</div>
                   <div class="install-meta" id="instMeta">1 / 6 • Every 8s</div>
                 </div>
 
                 <div class="dossier-stamp">
-                  <div class="stamp-left type" id="instStamp">FILE: BASTIOR PRIME • CLEARANCE: MAGENTA</div>
+                  <div class="stamp-left" id="instStamp">FILE: BASTIOR PRIME • CLEARANCE: MAGENTA</div>
                   <div class="stamp-right" id="instSeal">SEAL: VERIFIED</div>
                 </div>
 
@@ -881,16 +838,16 @@
 
           <div class="row">
             <label>Team Names</label>
-            <input id="e_teamDefName" type="text" placeholder="Defenders" />
-            <input id="e_teamAttName" type="text" placeholder="Attackers" />
-            <input id="e_teamRaiName" type="text" placeholder="Raiders" />
+            <input id="e_teamDefName" type="text" />
+            <input id="e_teamAttName" type="text" />
+            <input id="e_teamRaiName" type="text" />
           </div>
 
           <div class="row">
             <label>Team Colors (hex)</label>
-            <input id="e_cDef" type="text" placeholder="#d1a14b" />
-            <input id="e_cAtt" type="text" placeholder="#cc3b3b" />
-            <input id="e_cRai" type="text" placeholder="#4aa6ff" />
+            <input id="e_cDef" type="text" />
+            <input id="e_cAtt" type="text" />
+            <input id="e_cRai" type="text" />
           </div>
 
           <div class="row">
@@ -898,8 +855,8 @@
             <input id="e_cycleSeconds" type="number" min="2" step="1" />
             <label>Installation Hint Line</label>
             <input id="e_instHint" type="text" />
-            <label>Stamp Templates (optional)</label>
-            <textarea id="e_stampTemplates" placeholder="FILE: {NAME} • CLEARANCE: MAGENTA&#10;INDEX: {I}/{N} • ARCHIVE: BASTIOR"></textarea>
+            <label>Stamp Templates (one per line)</label>
+            <textarea id="e_stampTemplates"></textarea>
           </div>
 
           <div class="row">
@@ -952,7 +909,7 @@
   </div>
 
   <script>
-    const STORAGE_KEY = "bastior_postgame_campaign_dossier_v1";
+    const STORAGE_KEY = "bastior_postgame_campaign_dossier_localflicker_v1";
 
     const DEFAULTS = {
       hdrTitle: "CAMPAIGN RECORD: BASTIOR SUB-SECTOR",
@@ -962,7 +919,7 @@
       resultKicker: "VICTORY DECLARED",
       resultMain: "VICTORY",
       resultWinner: "DEFENDERS OF BASTIOR",
-      accentMode: "gold",        // gold | green | red | custom
+      accentMode: "gold",
       accentCustom: "#d1a14b",
 
       leftFaction: "IMPERIUM OF MAN",
@@ -1020,6 +977,7 @@
     const qs = (name) => new URLSearchParams(location.search).get(name);
 
     function clamp(n,a,b){ return Math.max(a, Math.min(b,n)); }
+    function safeJsonParse(raw){ try{ return JSON.parse(raw);}catch(e){ return null; } }
 
     function parseMMSS(s){
       const m = String(s||"").trim().match(/^(\d{1,3}):(\d{2})$/);
@@ -1029,15 +987,12 @@
       if (Number.isNaN(mm) || Number.isNaN(ss)) return null;
       return clamp(mm,0,999)*60 + clamp(ss,0,59);
     }
-
     function fmtMMSS(total){
       total = Math.max(0, Math.floor(total));
       const mm = Math.floor(total/60);
       const ss = total%60;
       return String(mm).padStart(2,"0")+":"+String(ss).padStart(2,"0");
     }
-
-    function safeJsonParse(raw){ try{ return JSON.parse(raw);}catch(e){ return null; } }
 
     function normalizeData(obj){
       const d = { ...DEFAULTS, ...(obj||{}) };
@@ -1056,9 +1011,7 @@
       if (!Array.isArray(d.notes)) d.notes = String(d.notes||"").split("\n").map(s=>s.trim()).filter(Boolean);
       d.notes = d.notes.map(s=>String(s).trim()).filter(Boolean);
 
-      if (!Array.isArray(d.stampTemplates)) {
-        d.stampTemplates = String(d.stampTemplates||"").split("\n").map(s=>s.trim()).filter(Boolean);
-      }
+      if (!Array.isArray(d.stampTemplates)) d.stampTemplates = String(d.stampTemplates||"").split("\n").map(s=>s.trim()).filter(Boolean);
       d.stampTemplates = d.stampTemplates.map(s=>String(s).trim()).filter(Boolean);
       if (!d.stampTemplates.length) d.stampTemplates = DEFAULTS.stampTemplates.slice();
 
@@ -1082,13 +1035,11 @@
       if (data.accentMode === "custom" && data.accentCustom) color = data.accentCustom;
       document.documentElement.style.setProperty("--result-accent", color);
     }
-
     function applyTeamColors(data){
       document.documentElement.style.setProperty("--c-def", data.cDef || DEFAULTS.cDef);
       document.documentElement.style.setProperty("--c-att", data.cAtt || DEFAULTS.cAtt);
       document.documentElement.style.setProperty("--c-rai", data.cRai || DEFAULTS.cRai);
     }
-
     function setText(id, val){
       const el = $(id);
       if (el) el.textContent = (val ?? "").toString();
@@ -1114,9 +1065,6 @@
     function saveStored(data){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
     function clearStored(){ localStorage.removeItem(STORAGE_KEY); }
 
-    // -------------------------
-    // State
-    // -------------------------
     let state = {
       data: normalizeData(DEFAULTS),
       index: 0,
@@ -1141,34 +1089,13 @@
         .replaceAll("{N}", String(n));
     }
 
-    function setTyping(on){
-      const body = document.body;
-      body.classList.toggle("typing", !!on);
-    }
-
-    // Trigger 40k dossier flip animation
     async function dossierFlipTransition(updateFn){
       const frame = $("frame");
-
-      // Phase A: wipe begins
       frame.classList.add("cycling");
-      setTyping(false);
-
-      // small delay so class applies before update
       await new Promise(r => setTimeout(r, 180));
-
-      // Update content mid-wipe
       updateFn();
-
-      // Phase B: settle-in
       frame.classList.remove("cycling");
-      frame.classList.add("settle");
-
-      // Typewriter “blink” (very subtle)
-      setTyping(true);
-      setTimeout(() => setTyping(false), 520);
-
-      setTimeout(() => frame.classList.remove("settle"), 260);
+      // (No global settle class needed; we kept it minimal here.)
     }
 
     function renderInstallationInstant(){
@@ -1180,9 +1107,7 @@
       setText("instName", inst.name);
       setText("instMeta", `${idx + 1} / ${list.length} • Every ${d.cycleSeconds}s`);
 
-      // stamp + seal
-      const stamp = pickStamp(inst.name, idx, list.length);
-      setText("instStamp", stamp);
+      setText("instStamp", pickStamp(inst.name, idx, list.length));
       setText("instSeal", "SEAL: VERIFIED");
 
       setText("instHint", d.instHint);
@@ -1208,7 +1133,6 @@
       if (state.cycleTimer) clearInterval(state.cycleTimer);
       state.cycleTimer = null;
     }
-
     function startCycle(){
       stopCycle();
       state.cycleTimer = setInterval(() => {
@@ -1216,7 +1140,6 @@
         renderInstallationFancy();
       }, state.data.cycleSeconds * 1000);
     }
-
     function nextInstall(){
       state.index = (state.index + 1) % state.data.installations.length;
       renderInstallationFancy();
@@ -1226,55 +1149,43 @@
       renderInstallationFancy();
     }
 
-    // -------------------------
     // Countdown
-    // -------------------------
     function setCountdownVisible(v){
       state.countdownVisible = !!v;
       $("countdownCard").classList.toggle("timer-hidden", !state.countdownVisible);
     }
-
     function renderCountdown(){
       setText("timerLabel", state.data.timerLabel);
       setText("timerBig", fmtMMSS(state.countdownLeft));
-
       if (state.countdownLeft <= 0 && state.data.timerAutoHide){
         setCountdownVisible(false);
         state.countdownRunning = false;
       }
     }
-
     function stopCountdownTick(){
       if (state.countdownTick) clearInterval(state.countdownTick);
       state.countdownTick = null;
     }
-
     function startCountdownTick(){
       stopCountdownTick();
       state.countdownTick = setInterval(() => {
         if (!state.countdownRunning) return;
         state.countdownLeft = Math.max(0, state.countdownLeft - 1);
         renderCountdown();
-        if (state.countdownLeft <= 0){
-          state.countdownRunning = false;
-        }
+        if (state.countdownLeft <= 0) state.countdownRunning = false;
       }, 1000);
     }
-
     function toggleCountdownRun(){
       if (!state.countdownVisible) setCountdownVisible(true);
       state.countdownRunning = !state.countdownRunning;
     }
-
     function resetCountdown(){
       state.countdownLeft = state.data.timerStartSeconds;
       state.countdownRunning = false;
       renderCountdown();
     }
 
-    // -------------------------
-    // Main render
-    // -------------------------
+    // Render all
     function renderAll(data){
       data = normalizeData(data);
       state.data = data;
@@ -1304,31 +1215,23 @@
 
       renderNotes(data.notes);
 
-      // Dossier
       state.index = clamp(state.index, 0, data.installations.length - 1);
       renderInstallationInstant();
       startCycle();
 
-      // Countdown
       setCountdownVisible(data.timerVisible);
       if (!state.countdownTick) startCountdownTick();
-      if (!state.countdownRunning && state.countdownLeft === 0) {
-        state.countdownLeft = data.timerStartSeconds;
-      }
+      if (!state.countdownRunning && state.countdownLeft === 0) state.countdownLeft = data.timerStartSeconds;
       renderCountdown();
 
       return data;
     }
 
-    // -------------------------
-    // Editor helpers
-    // -------------------------
+    // Editor
     function openEditor(open){ $("editor").classList.toggle("hidden", !open); }
-
     function installationsToText(list){
       return (list || []).map(x => `${x.name} | ${x.def} | ${x.att} | ${x.rai}`).join("\n");
     }
-
     function textToInstallations(txt){
       const lines = String(txt || "").split("\n").map(s=>s.trim()).filter(Boolean);
       const out = [];
@@ -1343,7 +1246,6 @@
       }
       return out.length ? out : DEFAULTS.installations.slice();
     }
-
     function fillEditor(d){
       d = normalizeData(d);
 
@@ -1380,7 +1282,6 @@
       $("e_instHint").value = d.instHint;
 
       $("e_stampTemplates").value = (d.stampTemplates || []).join("\n");
-
       $("e_installations").value = installationsToText(d.installations);
 
       $("e_timerVisible").value = d.timerVisible ? "1" : "0";
@@ -1389,7 +1290,6 @@
       $("e_timerAutoHide").value = d.timerAutoHide ? "1" : "0";
 
       $("e_notes").value = (d.notes || []).join("\n");
-
       $("e_cornerTag").value = d.cornerTag;
     }
 
@@ -1430,7 +1330,6 @@
         instHint: $("e_instHint").value,
 
         stampTemplates: $("e_stampTemplates").value.split("\n"),
-
         installations: textToInstallations($("e_installations").value),
 
         timerVisible: $("e_timerVisible").value === "1",
@@ -1439,7 +1338,6 @@
         timerAutoHide: $("e_timerAutoHide").value === "1",
 
         notes: $("e_notes").value.split("\n"),
-
         cornerTag: $("e_cornerTag").value
       });
     }
@@ -1452,7 +1350,6 @@
       a.click();
       URL.revokeObjectURL(a.href);
     }
-
     function promptImport(){
       const raw = prompt("Paste overlay JSON here:");
       if (!raw) return null;
@@ -1461,15 +1358,11 @@
       return parsed;
     }
 
-    // -------------------------
     // Init
-    // -------------------------
     (function init(){
-      // Fit 1920x1080 to viewport
       const wrap = $("wrap");
       function fit(){
-        const w = window.innerWidth, h = window.innerHeight;
-        const s = Math.min(w/1920, h/1080);
+        const s = Math.min(window.innerWidth/1920, window.innerHeight/1080);
         wrap.style.transform = `scale(${s})`;
       }
       window.addEventListener("resize", fit);
@@ -1490,13 +1383,9 @@
 
       if (qs("edit") === "1") openEditor(true);
 
-      // Buttons
       $("btnApply").addEventListener("click", () => {
         const d = readEditor();
-
-        const prevStart = state.data.timerStartSeconds;
-        const nextStart = d.timerStartSeconds;
-        const startChanged = prevStart !== nextStart;
+        const startChanged = state.data.timerStartSeconds !== d.timerStartSeconds;
 
         state.index = clamp(state.index, 0, d.installations.length - 1);
         state.stampIndex = 0;
@@ -1512,16 +1401,13 @@
         }
       });
 
-      $("btnPrev").addEventListener("click", () => { prevInstall(); });
-      $("btnNext").addEventListener("click", () => { nextInstall(); });
+      $("btnPrev").addEventListener("click", () => prevInstall());
+      $("btnNext").addEventListener("click", () => nextInstall());
 
-      $("btnStartPause").addEventListener("click", () => { toggleCountdownRun(); });
-      $("btnResetTimer").addEventListener("click", () => { resetCountdown(); });
+      $("btnStartPause").addEventListener("click", () => toggleCountdownRun());
+      $("btnResetTimer").addEventListener("click", () => resetCountdown());
 
-      $("btnExport").addEventListener("click", () => {
-        const d = readEditor();
-        downloadJson("postgame-campaign-dossier-export.json", d);
-      });
+      $("btnExport").addEventListener("click", () => downloadJson("postgame-campaign-export.json", readEditor()));
 
       $("btnImport").addEventListener("click", () => {
         const imported = promptImport();
@@ -1559,14 +1445,10 @@
         if ((e.ctrlKey || e.metaKey) && key === "e"){
           e.preventDefault();
           const isHidden = $("editor").classList.contains("hidden");
-          if (isHidden){
-            const d = normalizeData(loadStored() || state.data || DEFAULTS);
-            fillEditor(d);
-          }
+          if (isHidden) fillEditor(normalizeData(loadStored() || state.data || DEFAULTS));
           openEditor(isHidden);
           return;
         }
-
         if ((e.ctrlKey || e.metaKey) && key === "t"){
           e.preventDefault();
           setCountdownVisible(!state.countdownVisible);
@@ -1576,7 +1458,6 @@
           state.data = d;
           return;
         }
-
         if ((e.ctrlKey || e.metaKey) && e.code === "Space"){
           e.preventDefault();
           toggleCountdownRun();
@@ -1584,7 +1465,6 @@
         }
       });
 
-      // Start countdown ticking
       startCountdownTick();
       renderCountdown();
     })();
