@@ -1,0 +1,1021 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>40k Post-Game Results</title>
+
+  <style>
+    :root{
+      --bg0:#07080b;
+      --bg1:#0b0e14;
+      --ink:#e9e6dc;
+      --muted:#b7b1a2;
+      --dim:#7d776b;
+
+      --gold:#d1a14b;
+      --red:#cc3b3b;
+      --green:#3fbf7f;
+
+      --panel: rgba(10, 12, 18, 0.72);
+      --panel2: rgba(14, 18, 26, 0.68);
+      --stroke: rgba(209, 161, 75, 0.25);
+      --stroke2: rgba(233, 230, 220, 0.10);
+
+      --radius: 18px;
+      --shadow: 0 20px 60px rgba(0,0,0,0.55);
+      --safe: 72px; /* safe margin for 1080p */
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+
+      --result-accent: var(--gold);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body{
+      margin:0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background: radial-gradient(1200px 700px at 50% 25%, #121729 0%, var(--bg1) 40%, var(--bg0) 100%);
+      overflow:hidden;
+    }
+
+    /* subtle star/noise feel without heavy assets */
+    .noise {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.10;
+      background-image:
+        radial-gradient(circle at 20% 30%, rgba(255,255,255,.08) 0 1px, transparent 2px),
+        radial-gradient(circle at 60% 70%, rgba(255,255,255,.06) 0 1px, transparent 2px),
+        radial-gradient(circle at 80% 20%, rgba(255,255,255,.05) 0 1px, transparent 2px),
+        radial-gradient(circle at 30% 80%, rgba(255,255,255,.06) 0 1px, transparent 2px);
+      background-size: 420px 420px, 540px 540px, 680px 680px, 760px 760px;
+      filter: blur(0.1px);
+    }
+
+    .scanlines{
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.25;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,0.05),
+        rgba(255,255,255,0.05) 1px,
+        rgba(0,0,0,0) 4px,
+        rgba(0,0,0,0) 7px
+      );
+      mix-blend-mode: overlay;
+    }
+
+    .flicker{
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      animation: flicker 7s infinite;
+      background: radial-gradient(700px 420px at 50% 30%, rgba(209,161,75,0.06), transparent 55%);
+      opacity: 0.45;
+    }
+    @keyframes flicker{
+      0%, 100% { opacity: 0.26; }
+      7% { opacity: 0.38; }
+      12% { opacity: 0.22; }
+      23% { opacity: 0.44; }
+      27% { opacity: 0.30; }
+      51% { opacity: 0.36; }
+      64% { opacity: 0.24; }
+      78% { opacity: 0.40; }
+    }
+
+    .wrap{
+      width: 1920px;
+      height: 1080px;
+      position: relative;
+      transform-origin: top left;
+    }
+
+    /* Scale to viewport while preserving 16:9 layout */
+    .stage{
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+    }
+
+    .frame{
+      position: absolute;
+      inset: var(--safe);
+      border-radius: calc(var(--radius) + 8px);
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.10));
+      box-shadow: var(--shadow);
+      border: 1px solid var(--stroke2);
+      overflow: hidden;
+    }
+
+    .frame::before{
+      content:"";
+      position:absolute;
+      inset: -2px;
+      border-radius: calc(var(--radius) + 10px);
+      border: 2px solid var(--stroke);
+      opacity: 0.7;
+      pointer-events:none;
+    }
+
+    .header{
+      position: absolute;
+      top: 0;
+      left: 0; right: 0;
+      padding: 22px 28px;
+      background: linear-gradient(90deg, rgba(209,161,75,0.16), rgba(209,161,75,0.06) 55%, rgba(233,230,220,0.02));
+      border-bottom: 1px solid var(--stroke2);
+      display:flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .title{
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-weight: 700;
+      font-size: 18px;
+      color: rgba(233,230,220,0.92);
+    }
+
+    .sub{
+      font-family: var(--mono);
+      font-size: 14px;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: rgba(233,230,220,0.62);
+      white-space: nowrap;
+    }
+
+    .content{
+      position: absolute;
+      top: 86px;
+      left: 0; right: 0; bottom: 0;
+      padding: 28px;
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 22px;
+    }
+
+    .card{
+      background: var(--panel);
+      border: 1px solid var(--stroke2);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .card .card-h{
+      padding: 16px 18px;
+      border-bottom: 1px solid rgba(233,230,220,0.08);
+      background: linear-gradient(180deg, rgba(233,230,220,0.03), transparent);
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .label{
+      font-family: var(--mono);
+      font-size: 13px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(233,230,220,0.65);
+    }
+
+    .pill{
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(233,230,220,0.12);
+      color: rgba(233,230,220,0.8);
+      background: rgba(0,0,0,0.28);
+      white-space: nowrap;
+    }
+
+    /* RESULT BLOCK */
+    .result{
+      padding: 26px 22px 20px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .result-top{
+      display:grid;
+      gap: 8px;
+      text-align: center;
+      padding: 10px 10px 0;
+    }
+
+    .result-kicker{
+      font-family: var(--mono);
+      text-transform: uppercase;
+      letter-spacing: 0.20em;
+      font-size: 13px;
+      color: rgba(233,230,220,0.55);
+    }
+
+    .result-main{
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      font-weight: 900;
+      font-size: 56px;
+      color: var(--result-accent);
+      text-shadow: 0 0 22px rgba(209,161,75,0.12);
+      line-height: 1.05;
+    }
+
+    .result-winner{
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 800;
+      font-size: 22px;
+      color: rgba(233,230,220,0.92);
+    }
+
+    .versus{
+      display:grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items:center;
+      gap: 14px;
+      padding: 10px 0 0;
+    }
+
+    .side{
+      border-radius: 16px;
+      border: 1px solid rgba(233,230,220,0.10);
+      background: rgba(0,0,0,0.20);
+      padding: 14px 14px 12px;
+      display:grid;
+      gap: 8px;
+    }
+
+    .side .side-name{
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-size: 18px;
+      color: rgba(233,230,220,0.92);
+    }
+
+    .side .side-sub{
+      font-family: var(--mono);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 12px;
+      color: rgba(233,230,220,0.58);
+    }
+
+    .vs{
+      font-family: var(--mono);
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(233,230,220,0.58);
+      font-size: 13px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(233,230,220,0.12);
+      background: rgba(0,0,0,0.22);
+    }
+
+    /* DETAILS BLOCK */
+    .grid{
+      padding: 18px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .kv{
+      background: rgba(0,0,0,0.20);
+      border: 1px solid rgba(233,230,220,0.10);
+      border-radius: 14px;
+      padding: 12px 12px 10px;
+      display:grid;
+      gap: 6px;
+      min-height: 70px;
+    }
+    .k{
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(233,230,220,0.55);
+    }
+    .v{
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: rgba(233,230,220,0.92);
+      font-size: 16px;
+      line-height: 1.25;
+    }
+    .v.mono{ font-family: var(--mono); font-weight: 650; font-size: 14px; }
+
+    /* OUTCOME BLOCK */
+    .list{
+      padding: 18px 18px 16px;
+      display:grid;
+      gap: 12px;
+    }
+
+    .line{
+      display:flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(0,0,0,0.18);
+      border: 1px solid rgba(233,230,220,0.10);
+    }
+    .dot{
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      margin-top: 5px;
+      background: var(--result-accent);
+      box-shadow: 0 0 10px rgba(209,161,75,0.2);
+      flex: 0 0 auto;
+    }
+    .txt{
+      color: rgba(233,230,220,0.88);
+      font-size: 16px;
+      letter-spacing: 0.01em;
+      line-height: 1.25;
+    }
+    .small{
+      color: rgba(233,230,220,0.64);
+      font-size: 13px;
+      font-family: var(--mono);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    /* RIGHT COLUMN STACK */
+    .right{
+      display:grid;
+      grid-template-rows: auto 1fr;
+      gap: 22px;
+    }
+
+    .split{
+      display:grid;
+      grid-template-rows: auto auto;
+      gap: 22px;
+    }
+
+    .hidden { display:none !important; }
+
+    /* EDIT PANEL (Hidden by default) */
+    .editor{
+      position: absolute;
+      right: 22px;
+      top: 108px;
+      width: 520px;
+      max-height: calc(1080px - 140px);
+      overflow: auto;
+      border-radius: 18px;
+      border: 1px solid rgba(233,230,220,0.14);
+      background: rgba(8,10,14,0.86);
+      box-shadow: 0 20px 70px rgba(0,0,0,0.65);
+      padding: 14px;
+      z-index: 20;
+      backdrop-filter: blur(6px);
+    }
+
+    .editor h3{
+      margin: 6px 6px 10px;
+      font-size: 14px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-family: var(--mono);
+      color: rgba(233,230,220,0.78);
+    }
+
+    .editor .row{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      padding: 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(233,230,220,0.08);
+      background: rgba(0,0,0,0.24);
+      margin: 8px 6px;
+    }
+
+    .editor label{
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(233,230,220,0.62);
+    }
+
+    .editor input, .editor textarea, .editor select{
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid rgba(233,230,220,0.12);
+      background: rgba(10,12,18,0.60);
+      color: rgba(233,230,220,0.92);
+      padding: 10px 10px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .editor textarea{ min-height: 64px; resize: vertical; }
+
+    .editor .btns{
+      display:flex;
+      gap: 10px;
+      padding: 10px 6px 6px;
+      flex-wrap: wrap;
+    }
+
+    .btn{
+      border-radius: 12px;
+      border: 1px solid rgba(233,230,220,0.14);
+      background: rgba(0,0,0,0.30);
+      color: rgba(233,230,220,0.86);
+      padding: 10px 12px;
+      font-family: var(--mono);
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      font-size: 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .btn.primary{
+      border-color: rgba(209,161,75,0.35);
+      background: rgba(209,161,75,0.14);
+      color: rgba(233,230,220,0.95);
+    }
+
+    .hint{
+      margin: 0 6px 10px;
+      color: rgba(233,230,220,0.55);
+      font-size: 12px;
+      line-height: 1.35;
+      font-family: var(--mono);
+      letter-spacing: 0.06em;
+    }
+
+    /* tiny watermark corner */
+    .corner{
+      position:absolute;
+      bottom: 18px;
+      left: 20px;
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(233,230,220,0.38);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="noise"></div>
+  <div class="scanlines"></div>
+  <div class="flicker"></div>
+
+  <div class="stage">
+    <div class="wrap" id="wrap">
+      <div class="frame">
+        <div class="header">
+          <div class="title" id="hdrTitle">CAMPAIGN RECORD: BASTIOR SUB-SECTOR</div>
+          <div class="sub" id="hdrStamp">AFTER-ACTION LOG • 0041.M42 • TURN 3</div>
+        </div>
+
+        <div class="content">
+          <!-- LEFT: RESULT + DETAILS -->
+          <div class="card">
+            <div class="card-h">
+              <div class="label">Post-Engagement Declaration</div>
+              <div class="pill" id="pillMode">FINAL REPORT</div>
+            </div>
+
+            <div class="result">
+              <div class="result-top">
+                <div class="result-kicker" id="resultKicker">VICTORY DECLARED</div>
+                <div class="result-main" id="resultMain">VICTORY</div>
+                <div class="result-winner" id="resultWinner">DEFENDERS OF BASTIOR</div>
+              </div>
+
+              <div class="versus">
+                <div class="side">
+                  <div class="side-name" id="leftFaction">IMPERIUM OF MAN</div>
+                  <div class="side-sub" id="leftPlayer">Commander: Player One</div>
+                </div>
+                <div class="vs">VS</div>
+                <div class="side">
+                  <div class="side-name" id="rightFaction">CHAOS</div>
+                  <div class="side-sub" id="rightPlayer">Commander: Player Two</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid">
+              <div class="kv">
+                <div class="k">Mission</div>
+                <div class="v" id="missionName">SUPPLY RAID</div>
+              </div>
+              <div class="kv">
+                <div class="k">Theater</div>
+                <div class="v" id="missionTheater">Bastior Prime – Manufactorum District</div>
+              </div>
+              <div class="kv">
+                <div class="k">Score</div>
+                <div class="v mono" id="scoreLine">86–72 (VP)</div>
+              </div>
+              <div class="kv">
+                <div class="k">Campaign Turn</div>
+                <div class="v mono" id="roundLine">Turn 3</div>
+              </div>
+            </div>
+
+            <div class="corner" id="cornerTag">Administratum Copy • Verified</div>
+          </div>
+
+          <!-- RIGHT: OUTCOME + OPTIONAL HONORS -->
+          <div class="right">
+            <div class="card">
+              <div class="card-h">
+                <div class="label">Strategic Outcome</div>
+                <div class="pill" id="territoryPill">TERRITORY UPDATE</div>
+              </div>
+              <div class="list" id="outcomeList">
+                <!-- populated by JS -->
+              </div>
+            </div>
+
+            <div class="card" id="honorsCard">
+              <div class="card-h">
+                <div class="label">Honors & Scars</div>
+                <div class="pill" id="honorsPill">OPTIONAL</div>
+              </div>
+              <div class="list" id="honorsList">
+                <!-- populated by JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- EDITOR PANEL -->
+        <div class="editor hidden" id="editor">
+          <h3>Overlay Editor</h3>
+          <div class="hint">
+            Ctrl+E toggles this panel. Changes auto-save locally.
+            Use Export/Import for presets. Add <b>?reset=1</b> to clear saved data.
+          </div>
+
+          <div class="row">
+            <label>Header Title</label>
+            <input id="e_hdrTitle" type="text" />
+          </div>
+          <div class="row">
+            <label>Header Stamp</label>
+            <input id="e_hdrStamp" type="text" />
+          </div>
+
+          <div class="row">
+            <label>Result Kicker (small line)</label>
+            <input id="e_resultKicker" type="text" />
+          </div>
+          <div class="row">
+            <label>Result Main (big word)</label>
+            <input id="e_resultMain" type="text" />
+          </div>
+          <div class="row">
+            <label>Winner Line</label>
+            <input id="e_resultWinner" type="text" />
+          </div>
+
+          <div class="row">
+            <label>Result Accent Color</label>
+            <select id="e_resultAccent">
+              <option value="gold">Gold (default)</option>
+              <option value="green">Green</option>
+              <option value="red">Red</option>
+              <option value="custom">Custom (hex)</option>
+            </select>
+            <input id="e_customAccent" type="text" placeholder="#d1a14b" />
+          </div>
+
+          <div class="row">
+            <label>Left Faction</label>
+            <input id="e_leftFaction" type="text" />
+            <label>Left Commander</label>
+            <input id="e_leftPlayer" type="text" />
+          </div>
+
+          <div class="row">
+            <label>Right Faction</label>
+            <input id="e_rightFaction" type="text" />
+            <label>Right Commander</label>
+            <input id="e_rightPlayer" type="text" />
+          </div>
+
+          <div class="row">
+            <label>Mission Name</label>
+            <input id="e_missionName" type="text" />
+            <label>Theater</label>
+            <input id="e_missionTheater" type="text" />
+          </div>
+
+          <div class="row">
+            <label>Score Line</label>
+            <input id="e_scoreLine" type="text" />
+            <label>Campaign Turn</label>
+            <input id="e_roundLine" type="text" />
+          </div>
+
+          <div class="row">
+            <label>Outcome Lines (one per line)</label>
+            <textarea id="e_outcomes"></textarea>
+          </div>
+
+          <div class="row">
+            <label>Honors & Scars (one per line) — leave empty to hide panel</label>
+            <textarea id="e_honors"></textarea>
+          </div>
+
+          <div class="row">
+            <label>Corner Tag</label>
+            <input id="e_cornerTag" type="text" />
+          </div>
+
+          <div class="btns">
+            <button class="btn primary" id="btnApply">Apply</button>
+            <button class="btn" id="btnExport">Export JSON</button>
+            <button class="btn" id="btnImport">Import JSON</button>
+            <button class="btn" id="btnClear">Clear Saved</button>
+            <button class="btn" id="btnClose">Close</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================
+    //  CONFIG
+    // =========================
+    const STORAGE_KEY = "bastior_postgame_overlay_v1";
+    const OPTIONAL_JSON_URL = "postgame.json"; // put a file next to this HTML if you want
+
+    const DEFAULTS = {
+      hdrTitle: "CAMPAIGN RECORD: BASTIOR SUB-SECTOR",
+      hdrStamp: "AFTER-ACTION LOG • 0041.M42 • TURN 3",
+      pillMode: "FINAL REPORT",
+      resultKicker: "VICTORY DECLARED",
+      resultMain: "VICTORY",
+      resultWinner: "DEFENDERS OF BASTIOR",
+
+      accentMode: "gold",  // gold | green | red | custom
+      accentCustom: "#d1a14b",
+
+      leftFaction: "IMPERIUM OF MAN",
+      leftPlayer: "Commander: Player One",
+      rightFaction: "CHAOS",
+      rightPlayer: "Commander: Player Two",
+
+      missionName: "SUPPLY RAID",
+      missionTheater: "Bastior Prime – Manufactorum District",
+      scoreLine: "86–72 (VP)",
+      roundLine: "Turn 3",
+
+      outcomes: [
+        "Bastior Prime: 75% → 100% (Defenders)",
+        "Orbital Defense Grid Reactivated",
+        "Primary Warp Route Secured"
+      ],
+
+      honors: [
+        "Warlord gained Battle Trait",
+        "Veteran Unit Commended",
+        "Enemy Champion Marked for Vengeance"
+      ],
+
+      cornerTag: "Administratum Copy • Verified"
+    };
+
+    // =========================
+    //  UTIL
+    // =========================
+    const $ = (id) => document.getElementById(id);
+
+    function qs(name){
+      const v = new URLSearchParams(location.search).get(name);
+      return v;
+    }
+
+    function applyAccent(data){
+      let color = "var(--gold)";
+      if (data.accentMode === "green") color = "var(--green)";
+      if (data.accentMode === "red") color = "var(--red)";
+      if (data.accentMode === "custom" && data.accentCustom) color = data.accentCustom;
+      document.documentElement.style.setProperty("--result-accent", color);
+    }
+
+    function setText(id, val){
+      const el = $(id);
+      if (!el) return;
+      el.textContent = (val ?? "").toString();
+    }
+
+    function renderList(containerId, lines){
+      const el = $(containerId);
+      el.innerHTML = "";
+      (lines || []).forEach(line => {
+        const row = document.createElement("div");
+        row.className = "line";
+        row.innerHTML = `
+          <div class="dot"></div>
+          <div>
+            <div class="txt"></div>
+          </div>
+        `;
+        row.querySelector(".txt").textContent = line;
+        el.appendChild(row);
+      });
+    }
+
+    function normalizeData(obj){
+      const d = { ...DEFAULTS, ...(obj || {}) };
+
+      // Ensure arrays
+      d.outcomes = Array.isArray(d.outcomes) ? d.outcomes : String(d.outcomes || "").split("\n").filter(Boolean);
+      d.honors = Array.isArray(d.honors) ? d.honors : String(d.honors || "").split("\n").filter(Boolean);
+
+      // Trim lines
+      d.outcomes = d.outcomes.map(s => String(s).trim()).filter(Boolean);
+      d.honors = d.honors.map(s => String(s).trim()).filter(Boolean);
+
+      // Defensive strings
+      for (const k of Object.keys(DEFAULTS)){
+        if (k === "outcomes" || k === "honors") continue;
+        if (d[k] == null) d[k] = DEFAULTS[k];
+      }
+      return d;
+    }
+
+    // =========================
+    //  DATA LOADING
+    // =========================
+    function loadFromStorage(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
+      }catch(e){
+        return null;
+      }
+    }
+
+    function saveToStorage(data){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function clearStorage(){
+      localStorage.removeItem(STORAGE_KEY);
+    }
+
+    async function loadOptionalJson(){
+      try{
+        const res = await fetch(OPTIONAL_JSON_URL, { cache: "no-store" });
+        if (!res.ok) return null;
+        return await res.json();
+      }catch(e){
+        return null;
+      }
+    }
+
+    // =========================
+    //  RENDER
+    // =========================
+    function render(data){
+      data = normalizeData(data);
+
+      setText("hdrTitle", data.hdrTitle);
+      setText("hdrStamp", data.hdrStamp);
+      setText("pillMode", data.pillMode);
+
+      setText("resultKicker", data.resultKicker);
+      setText("resultMain", data.resultMain);
+      setText("resultWinner", data.resultWinner);
+
+      setText("leftFaction", data.leftFaction);
+      setText("leftPlayer", data.leftPlayer);
+      setText("rightFaction", data.rightFaction);
+      setText("rightPlayer", data.rightPlayer);
+
+      setText("missionName", data.missionName);
+      setText("missionTheater", data.missionTheater);
+      setText("scoreLine", data.scoreLine);
+      setText("roundLine", data.roundLine);
+
+      setText("cornerTag", data.cornerTag);
+
+      applyAccent(data);
+      renderList("outcomeList", data.outcomes);
+
+      const honorsCard = $("honorsCard");
+      if (data.honors && data.honors.length){
+        honorsCard.classList.remove("hidden");
+        renderList("honorsList", data.honors);
+      } else {
+        honorsCard.classList.add("hidden");
+      }
+
+      return data;
+    }
+
+    // =========================
+    //  EDITOR
+    // =========================
+    function openEditor(open){
+      $("editor").classList.toggle("hidden", !open);
+    }
+
+    function fillEditor(d){
+      d = normalizeData(d);
+
+      $("e_hdrTitle").value = d.hdrTitle;
+      $("e_hdrStamp").value = d.hdrStamp;
+
+      $("e_resultKicker").value = d.resultKicker;
+      $("e_resultMain").value = d.resultMain;
+      $("e_resultWinner").value = d.resultWinner;
+
+      $("e_resultAccent").value = d.accentMode;
+      $("e_customAccent").value = d.accentCustom || "";
+
+      $("e_leftFaction").value = d.leftFaction;
+      $("e_leftPlayer").value = d.leftPlayer;
+      $("e_rightFaction").value = d.rightFaction;
+      $("e_rightPlayer").value = d.rightPlayer;
+
+      $("e_missionName").value = d.missionName;
+      $("e_missionTheater").value = d.missionTheater;
+
+      $("e_scoreLine").value = d.scoreLine;
+      $("e_roundLine").value = d.roundLine;
+
+      $("e_outcomes").value = (d.outcomes || []).join("\n");
+      $("e_honors").value = (d.honors || []).join("\n");
+
+      $("e_cornerTag").value = d.cornerTag;
+    }
+
+    function readEditor(){
+      const accentMode = $("e_resultAccent").value;
+      const accentCustom = $("e_customAccent").value.trim();
+
+      return normalizeData({
+        hdrTitle: $("e_hdrTitle").value,
+        hdrStamp: $("e_hdrStamp").value,
+
+        resultKicker: $("e_resultKicker").value,
+        resultMain: $("e_resultMain").value,
+        resultWinner: $("e_resultWinner").value,
+
+        accentMode,
+        accentCustom,
+
+        leftFaction: $("e_leftFaction").value,
+        leftPlayer: $("e_leftPlayer").value,
+        rightFaction: $("e_rightFaction").value,
+        rightPlayer: $("e_rightPlayer").value,
+
+        missionName: $("e_missionName").value,
+        missionTheater: $("e_missionTheater").value,
+        scoreLine: $("e_scoreLine").value,
+        roundLine: $("e_roundLine").value,
+
+        outcomes: $("e_outcomes").value.split("\n"),
+        honors: $("e_honors").value.split("\n"),
+
+        cornerTag: $("e_cornerTag").value
+      });
+    }
+
+    function downloadJson(filename, obj){
+      const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function promptImport(){
+      const raw = prompt("Paste overlay JSON here:");
+      if (!raw) return null;
+      try{
+        return JSON.parse(raw);
+      }catch(e){
+        alert("Invalid JSON.");
+        return null;
+      }
+    }
+
+    // =========================
+    //  INIT
+    // =========================
+    (async function init(){
+      // Auto-scale 1920x1080 to viewport
+      const wrap = $("wrap");
+      function fit(){
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        const sx = w / 1920;
+        const sy = h / 1080;
+        const s = Math.min(sx, sy);
+        wrap.style.transform = `scale(${s})`;
+      }
+      window.addEventListener("resize", fit);
+      fit();
+
+      if (qs("reset") === "1"){
+        clearStorage();
+      }
+
+      // Priority: localStorage > postgame.json > defaults
+      const stored = loadFromStorage();
+      let data = stored;
+
+      if (!data){
+        const json = await loadOptionalJson();
+        if (json) data = json;
+      }
+      if (!data) data = DEFAULTS;
+
+      data = render(data);
+      saveToStorage(data); // store baseline so editor starts from something
+
+      fillEditor(data);
+
+      // Open editor if requested
+      if (qs("edit") === "1"){
+        openEditor(true);
+      }
+
+      // Wire buttons
+      $("btnApply").addEventListener("click", () => {
+        const d = readEditor();
+        render(d);
+        saveToStorage(d);
+      });
+
+      $("btnExport").addEventListener("click", () => {
+        const d = readEditor();
+        downloadJson("postgame-export.json", d);
+      });
+
+      $("btnImport").addEventListener("click", () => {
+        const imported = promptImport();
+        if (!imported) return;
+        const d = normalizeData(imported);
+        fillEditor(d);
+        render(d);
+        saveToStorage(d);
+      });
+
+      $("btnClear").addEventListener("click", () => {
+        clearStorage();
+        const d = render(DEFAULTS);
+        fillEditor(d);
+        saveToStorage(d);
+      });
+
+      $("btnClose").addEventListener("click", () => openEditor(false));
+
+      // Hotkey: Ctrl+E
+      window.addEventListener("keydown", (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "e"){
+          e.preventDefault();
+          const isOpen = !$("editor").classList.contains("hidden");
+          if (!isOpen){
+            // refresh editor with current saved data
+            const d = loadFromStorage() || DEFAULTS;
+            fillEditor(d);
+          }
+          openEditor(!isOpen);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
